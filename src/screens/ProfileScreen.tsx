@@ -1,16 +1,21 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Switch,
+  Alert,
 } from 'react-native';
 import {useTheme} from '../context/ThemeContext';
 import {Text} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {supabase} from '../config/supabase';
+import {useNavigation} from '@react-navigation/native';
 
 const ProfileScreen = () => {
   const {theme, themeType, setThemeType} = useTheme();
+  const navigation = useNavigation();
 
   const styles = StyleSheet.create({
     container: {
@@ -101,6 +106,22 @@ const ProfileScreen = () => {
     setThemeType(type);
   };
 
+  const handleLogout = async () => {
+    try {
+      // Clear user details from AsyncStorage
+      await AsyncStorage.removeItem('userDetails');
+
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+
+      // Navigate to login screen
+      navigation.replace('Login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
@@ -175,7 +196,7 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity style={styles.button} onPress={handleLogout}>
           <Text style={styles.buttonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
