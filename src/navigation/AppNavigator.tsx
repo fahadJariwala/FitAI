@@ -39,6 +39,14 @@ const AppNavigator = () => {
         ) : (
           <Stack.Screen name="Main" component={BottomTabs} />
         )}
+          <Stack.Screen 
+        name="UserDetails" 
+        component={UserDetailsScreen}
+        options={{
+          title: 'Complete Your Profile',
+          headerShown: false,
+        }}
+      />
       </Stack.Navigator>
     </NavigationContainer>
   );
