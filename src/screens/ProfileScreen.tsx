@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   ScrollView,
@@ -7,15 +7,17 @@ import {
   Switch,
   Alert,
 } from 'react-native';
-import {useTheme} from '../context/ThemeContext';
-import {Text} from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {supabase} from '../config/supabase';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 
 const ProfileScreen = () => {
-  const {theme, themeType, setThemeType} = useTheme();
+  const { theme, themeType, setThemeType } = useTheme();
   const navigation = useNavigation();
+  const { signOut } = useAuth();
+
 
   const styles = StyleSheet.create({
     container: {
@@ -111,11 +113,12 @@ const ProfileScreen = () => {
       // Clear user details from AsyncStorage
       await AsyncStorage.removeItem('userDetails');
 
-      // Sign out from Supabase
-      await supabase.auth.signOut();
+      // // Sign out from Supabase
+      // await supabase.auth.signOut();
+      signOut()
 
       // Navigate to login screen
-      navigation.replace('Login');
+      navigation.replace('LoginScreen');
     } catch (error) {
       console.error('Error during logout:', error);
       Alert.alert('Error', 'Failed to logout. Please try again.');
@@ -153,12 +156,12 @@ const ProfileScreen = () => {
           <Text style={styles.sectionTitle}>App Settings</Text>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Theme</Text>
-            <View style={{flexDirection: 'row', gap: 10}}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity onPress={() => handleThemeChange('light')}>
                 <Text
                   style={[
                     styles.rowValue,
-                    themeType === 'light' && {color: theme.colors.primary},
+                    themeType === 'light' && { color: theme.colors.primary },
                   ]}>
                   Light
                 </Text>
@@ -167,7 +170,7 @@ const ProfileScreen = () => {
                 <Text
                   style={[
                     styles.rowValue,
-                    themeType === 'dark' && {color: theme.colors.primary},
+                    themeType === 'dark' && { color: theme.colors.primary },
                   ]}>
                   Dark
                 </Text>
@@ -176,7 +179,7 @@ const ProfileScreen = () => {
                 <Text
                   style={[
                     styles.rowValue,
-                    themeType === 'system' && {color: theme.colors.primary},
+                    themeType === 'system' && { color: theme.colors.primary },
                   ]}>
                   System
                 </Text>
@@ -187,7 +190,7 @@ const ProfileScreen = () => {
             <Text style={styles.rowLabel}>Notifications</Text>
             <Switch
               value={true}
-              onValueChange={() => {}}
+              onValueChange={() => { }}
               trackColor={{
                 false: theme.colors.border,
                 true: theme.colors.primary,

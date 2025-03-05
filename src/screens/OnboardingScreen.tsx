@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,62 +6,53 @@ import {
   TouchableOpacity,
   ScrollView,
   ImageBackground,
+  Image,
+  Text,
 } from 'react-native';
-import {useTheme} from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Text} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {
-  useFonts,
-  Poppins_400Regular,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-} from '@expo-google-fonts/poppins';
+import { typography } from '../styles/typeograpghy';
 
-const {width} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const slides = [
   {
     id: '1',
     title: 'Welcome to FitAI',
     description: 'Your journey to a healthier lifestyle starts here',
-    image: require('../assets/onboarding/welcome.jpg'),
-    backgroundColor: ['#4158D0', '#C850C0'],
+    image: require('../assets/images/feature1.jpg'),
+    backgroundColor: ['#FF4B4B', '#FFFFFF'],
   },
   {
     id: '2',
     title: 'Smart Workouts',
     description: 'Personalized AI-powered routines that adapt to your progress',
-    image: require('../assets/onboarding/workout.jpg'),
-    backgroundColor: ['#0093E9', '#80D0C7'],
+    image: require('../assets/images/feature2.jpg'),
+    backgroundColor: ['#FF4B4B', '#FFFFFF'],
   },
   {
     id: '3',
     title: 'Track Progress',
     description:
       'Watch your transformation with advanced analytics and insights',
-    image: require('../assets/onboarding/progress.jpg'),
-    backgroundColor: ['#8EC5FC', '#E0C3FC'],
+    image: require('../assets/images/feature3.jpg'),
+    backgroundColor: ['#FF4B4B', '#FFFFFF'],
   },
 ];
 
-const OnboardingScreen = ({navigation}) => {
-  const [fontsLoaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-  });
-  const {theme} = useTheme();
+const OnboardingScreen = ({ navigation }) => {
+  const { theme } = useTheme();
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-
-  if (!fontsLoaded) {
-    return null;
-  }
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+      width: width,
+      height: height,
+      padding: 0,
+      margin: 0,
     },
     slideContainer: {
       width: width,
@@ -70,47 +61,41 @@ const OnboardingScreen = ({navigation}) => {
       justifyContent: 'center',
     },
     imageContainer: {
+      marginTop: 80,
       width: width * 0.8,
       height: width * 0.8,
       marginBottom: 40,
-      borderRadius: 20,
+
       overflow: 'hidden',
-      elevation: 10,
+      // elevation: 10,
       shadowColor: '#000',
-      shadowOffset: {width: 0, height: 10},
+      shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.3,
       shadowRadius: 10,
     },
     image: {
-      width: '100%',
-      height: '100%',
+      width: width * 0.8,
+      height: height * 0.4,
       resizeMode: 'cover',
+      borderRadius: 20,
     },
     contentContainer: {
-      width: width * 0.9,
-      padding: 20,
-      borderRadius: 25,
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      flex: 1,
+      justifyContent: 'center',
       alignItems: 'center',
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 5},
-      shadowOpacity: 0.2,
-      shadowRadius: 5,
+      paddingHorizontal: 20,
     },
     title: {
-      fontSize: 32,
-      fontFamily: 'Poppins_700Bold',
-      color: theme.colors.text,
-      marginBottom: 10,
-      textAlign: 'center',
+      ...typography.h2,
+      marginBottom: 20,
+    },
+    subtitle: {
+      ...typography.h4,
+      marginBottom: 16,
     },
     description: {
-      fontSize: 16,
-      fontFamily: 'Poppins_400Regular',
-      color: theme.colors.text,
-      textAlign: 'center',
-      paddingHorizontal: 20,
+      ...typography.bodyLarge,
+      marginBottom: 24,
     },
     paginationContainer: {
       flexDirection: 'row',
@@ -131,17 +116,8 @@ const OnboardingScreen = ({navigation}) => {
       backgroundColor: '#fff',
     },
     button: {
-      position: 'absolute',
-      bottom: 50,
-      width: width - 60,
-      marginHorizontal: 30,
-      overflow: 'hidden',
-      borderRadius: 15,
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 5},
-      shadowOpacity: 0.2,
-      shadowRadius: 5,
+      ...typography.button,
+      padding: 12,
     },
     buttonGradient: {
       paddingVertical: 15,
@@ -152,19 +128,27 @@ const OnboardingScreen = ({navigation}) => {
       fontSize: 18,
       fontFamily: 'Poppins_600SemiBold',
     },
+    skipText: {
+      ...typography.bodyMedium,
+      color: '#666',
+    },
   });
 
   const handleScroll = event => {
     const slideIndex = Math.round(
       event.nativeEvent.contentOffset.x /
-        event.nativeEvent.layoutMeasurement.width,
+      event.nativeEvent.layoutMeasurement.width,
     );
     setActiveSlideIndex(slideIndex);
   };
 
-  const completeOnboarding = async () => {
-    await AsyncStorage.setItem('hasSeenOnboarding', 'true');
-    navigation.replace('Login');
+  const handleGetStarted = async () => {
+    try {
+      await AsyncStorage.setItem('hasLaunched', 'true');
+      navigation.replace('MainApp');
+    } catch (error) {
+      console.error('Error saving first launch status:', error);
+    }
   };
 
   return (
@@ -200,16 +184,8 @@ const OnboardingScreen = ({navigation}) => {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={completeOnboarding}>
-        <LinearGradient
-          colors={['#FF416C', '#FF4B2B']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={styles.buttonGradient}>
-          <Text style={styles.buttonText}>
-            {activeSlideIndex === slides.length - 1 ? 'Get Started' : 'Next'}
-          </Text>
-        </LinearGradient>
+      <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
+        <Text style={styles.buttonText}>Get Started</Text>
       </TouchableOpacity>
     </View>
   );
