@@ -30,6 +30,7 @@ const theme = createTheme({
         error: palette.error,
         warning: palette.warning,
         info: palette.info,
+        onPrimary: palette.textDark
     },
     spacing: {
         xs: 4,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -12,18 +12,18 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useTheme } from '../context/ThemeContext';
-import { typography } from '../styles/typeograpghy';
+import {useTheme} from '../context/ThemeContext';
+import {typography} from '../styles/typeograpghy';
+import {useAuth} from '../context/AuthContext';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
-const LoginScreen = ({ navigation }) => {
-  const { theme } = useTheme();
-
+const LoginScreen = ({navigation}) => {
+  const {theme} = useTheme();
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.background
+      backgroundColor: theme.colors.background,
     },
     scrollContent: {
       flexGrow: 1,
@@ -35,16 +35,17 @@ const LoginScreen = ({ navigation }) => {
       marginBottom: 40,
     },
     title: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      color: '#333',
+      // fontWeight: 'bold',
+      // color: '#333',
+      color: theme.colors.text,
       marginBottom: 10,
-      ...typography.h1
+      ...typography.h1,
     },
     subtitle: {
-      fontSize: 16,
-      color: '#666',
-      ...typography.label,
+      // fontSize: 16,
+      // color: '#666',
+      color: theme.colors.secondaryText,
+      ...typography.body,
     },
     formContainer: {
       width: '100%',
@@ -52,13 +53,13 @@ const LoginScreen = ({ navigation }) => {
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#f5f5f5',
+      backgroundColor: theme.colors.surface,
       borderRadius: 12,
       marginBottom: 8,
       paddingHorizontal: 15,
       height: 55,
       borderWidth: 1,
-      borderColor: '#eee',
+      borderColor: theme.colors.border,
     },
     inputIcon: {
       marginRight: 10,
@@ -72,19 +73,11 @@ const LoginScreen = ({ navigation }) => {
       padding: 10,
     },
     errorText: {
-      color: '#ff3b30',
-      fontSize: 12,
+      color: theme.colors.error,
+      ...typography.caption,
+      // fontSize: 12,
       marginBottom: 10,
       marginLeft: 5,
-    },
-    forgotPassword: {
-      alignSelf: 'flex-end',
-      marginTop: 10,
-      marginBottom: 20,
-    },
-    forgotPasswordText: {
-      color: '#007AFF',
-      fontSize: 14,
     },
     loginButton: {
       backgroundColor: theme.colors.primary,
@@ -93,7 +86,7 @@ const LoginScreen = ({ navigation }) => {
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: 20,
-      shadowColor: '#007AFF',
+      shadowColor: theme.colors.primary,
       shadowOffset: {
         width: 0,
         height: 4,
@@ -103,9 +96,10 @@ const LoginScreen = ({ navigation }) => {
       elevation: 8,
     },
     loginButtonText: {
-      color: '#fff',
-      fontSize: 18,
-      fontWeight: 'bold',
+      color: theme.colors.onPrimary,
+      ...typography.button,
+      // fontSize: 18,
+      // fontWeight: 'bold',
     },
     signupContainer: {
       flexDirection: 'row',
@@ -121,10 +115,23 @@ const LoginScreen = ({ navigation }) => {
       fontSize: 14,
       fontWeight: 'bold',
     },
+    button: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadii.m,
+      padding: theme.spacing.m,
+      alignItems: 'center',
+      marginBottom: theme.spacing.m,
+    },
+    buttonText: {
+      color: '#FFFFFF',
+      fontWeight: 'bold',
+    },
   });
 
+  const {signIn, signUp} = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({
     email: '',
@@ -138,7 +145,7 @@ const LoginScreen = ({ navigation }) => {
 
   const validateForm = () => {
     let isValid = true;
-    const newErrors = { email: '', password: '' };
+    const newErrors = {email: '', password: ''};
 
     // Email validation
     if (!email.trim()) {
@@ -162,39 +169,65 @@ const LoginScreen = ({ navigation }) => {
     return isValid;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (validateForm()) {
-      // Proceed with login
-      // Add your login logic here
-      navigation.replace('UserDetails');
+      try {
+        setLoading(true);
+        await signIn(email, password);
+      } catch (error) {
+        Alert.alert('Error', error.message);
+      } finally {
+        setLoading(false);
+        navigation.replace('MainApp');
+      }
+    }
+  };
+  const handleSignUp = async () => {
+    if (validateForm()) {
+      try {
+        setLoading(true);
+        await signUp(email, password);
+      } catch (error) {
+        Alert.alert('Error', error.message);
+      } finally {
+        setLoading(false);
+        navigation.replace('UserDetails');
+      }
     }
   };
 
-  return (
+  //localinvestor.com/home-demo-2/
+
+  https: return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
+      style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={styles.headerContainer}>
           <Text style={styles.title}>Welcome to Fit AI!</Text>
-          <Text style={styles.subtitle}>Sign in to continue your fitness journey</Text>
+          <Text style={styles.subtitle}>
+            Sign in to continue your fitness journey
+          </Text>
         </View>
 
         <View style={styles.formContainer}>
           <View style={styles.inputContainer}>
-            <Icon name="email-outline" size={20} color="#666" style={styles.inputIcon} />
+            <Icon
+              name="email-outline"
+              size={20}
+              color="#666"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Email"
               value={email}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setEmail(text);
                 if (errors.email) {
-                  setErrors(prev => ({ ...prev, email: '' }));
+                  setErrors(prev => ({...prev, email: ''}));
                 }
               }}
               keyboardType="email-address"
@@ -202,48 +235,64 @@ const LoginScreen = ({ navigation }) => {
               autoCorrect={false}
             />
           </View>
-          {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+          {errors.email ? (
+            <Text style={styles.errorText}>{errors.email}</Text>
+          ) : null}
 
           <View style={styles.inputContainer}>
-            <Icon name="lock-outline" size={20} color="#666" style={styles.inputIcon} />
+            <Icon
+              name="lock-outline"
+              size={20}
+              color="#666"
+              style={styles.inputIcon}
+            />
             <TextInput
-              style={[styles.input, { flex: 1 }]}
+              style={[styles.input, {flex: 1}]}
               placeholder="Password"
               value={password}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setPassword(text);
                 if (errors.password) {
-                  setErrors(prev => ({ ...prev, password: '' }));
+                  setErrors(prev => ({...prev, password: ''}));
                 }
               }}
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
-            >
+              style={styles.eyeIcon}>
               <Icon
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 size={20}
                 color="#666"
               />
             </TouchableOpacity>
           </View>
-          {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+          {errors.password ? (
+            <Text style={styles.errorText}>{errors.password}</Text>
+          ) : null}
 
-
-
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={handleLogin}
-          >
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
             <Text style={styles.loginButtonText}>Login</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, {backgroundColor: theme.colors.card}]}
+            onPress={handleSignUp}
+            disabled={loading}>
+            <Text style={[styles.buttonText, {color: theme.colors.text}]}>
+              Create Account
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-              <Text style={styles.signupLink}>Sign Up</Text>
+            {/* <Text style={styles.signupText}>Don't have an account? </Text> */}
+            <TouchableOpacity
+              style={[styles.button, {backgroundColor: theme.colors.card}]}
+              onPress={handleSignUp}
+              disabled={loading}>
+              <Text style={[styles.buttonText, {color: theme.colors.text}]}>
+                Create Account
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -251,7 +300,5 @@ const LoginScreen = ({ navigation }) => {
     </KeyboardAvoidingView>
   );
 };
-
-
 
 export default LoginScreen;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -9,42 +9,44 @@ import {
   Image,
   Text,
 } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import {useTheme} from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
-import { typography } from '../styles/typeograpghy';
+import {typography} from '../styles/typeograpghy';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useNavigation} from '@react-navigation/native';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
-const slides = [
-  {
-    id: '1',
-    title: 'Welcome to FitAI',
-    description: 'Your journey to a healthier lifestyle starts here',
-    image: require('../assets/images/feature1.jpg'),
-    backgroundColor: ['#FF4B4B', '#FFFFFF'],
-  },
-  {
-    id: '2',
-    title: 'Smart Workouts',
-    description: 'Personalized AI-powered routines that adapt to your progress',
-    image: require('../assets/images/feature2.jpg'),
-    backgroundColor: ['#FF4B4B', '#FFFFFF'],
-  },
-  {
-    id: '3',
-    title: 'Track Progress',
-    description:
-      'Watch your transformation with advanced analytics and insights',
-    image: require('../assets/images/feature3.jpg'),
-    backgroundColor: ['#FF4B4B', '#FFFFFF'],
-  },
-];
-
-const OnboardingScreen = ({ navigation }) => {
-  const { theme } = useTheme();
+const OnboardingScreen = () => {
+  const navigation = useNavigation();
+  const {theme} = useTheme();
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-
+  const slides = [
+    {
+      id: '1',
+      title: 'Welcome to FitAI',
+      description: 'Your journey to a healthier lifestyle starts here',
+      image: require('../assets/images/feature1.jpg'),
+      backgroundColor: [theme.colors.background, theme.colors.background],
+    },
+    {
+      id: '2',
+      title: 'Smart Workouts',
+      description:
+        'Personalized AI-powered routines that adapt to your progress',
+      image: require('../assets/images/feature2.jpg'),
+      backgroundColor: [theme.colors.background, theme.colors.background],
+    },
+    {
+      id: '3',
+      title: 'Track Progress',
+      description:
+        'Watch your transformation with advanced analytics and insights',
+      image: require('../assets/images/feature3.jpg'),
+      backgroundColor: [theme.colors.background, theme.colors.background],
+    },
+  ];
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -69,7 +71,7 @@ const OnboardingScreen = ({ navigation }) => {
       overflow: 'hidden',
       // elevation: 10,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 10 },
+      shadowOffset: {width: 0, height: 10},
       shadowOpacity: 0.3,
       shadowRadius: 10,
     },
@@ -118,26 +120,40 @@ const OnboardingScreen = ({ navigation }) => {
     button: {
       ...typography.button,
       padding: 12,
+      backgroundColor: theme.colors.primary,
     },
     buttonGradient: {
       paddingVertical: 15,
       alignItems: 'center',
     },
     buttonText: {
-      color: '#FFFFFF',
-      fontSize: 18,
-      fontFamily: 'Poppins_600SemiBold',
+      color: theme.colors.onPrimary,
+      // fontSize: 18,
+      // fontFamily: 'Poppins_600SemiBold'
+      ...typography.button,
     },
     skipText: {
       ...typography.bodyMedium,
       color: '#666',
+    },
+    skipButton: {
+      backgroundColor: theme.colors.background,
+      // fontSize: 18,
+      // fontFamily: 'Poppins_600SemiBold'
+      ...typography.button,
+    },
+    skipButtonText: {
+      color: theme.colors.text,
+      // fontSize: 18,
+      // fontFamily: 'Poppins_600SemiBold'
+      ...typography.button,
     },
   });
 
   const handleScroll = event => {
     const slideIndex = Math.round(
       event.nativeEvent.contentOffset.x /
-      event.nativeEvent.layoutMeasurement.width,
+        event.nativeEvent.layoutMeasurement.width,
     );
     setActiveSlideIndex(slideIndex);
   };
@@ -152,7 +168,10 @@ const OnboardingScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <TouchableOpacity style={styles.skipButton} onPress={handleGetStarted}>
+        <Text style={styles.skipButtonText}>Skip</Text>
+      </TouchableOpacity>
       <ScrollView
         horizontal
         pagingEnabled
@@ -187,7 +206,7 @@ const OnboardingScreen = ({ navigation }) => {
       <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
         <Text style={styles.buttonText}>Get Started</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
