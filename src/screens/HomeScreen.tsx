@@ -1,10 +1,54 @@
-import React from 'react';
-import {View, ScrollView, StyleSheet, TouchableOpacity} from 'react-native';
-import {useTheme} from '../context/ThemeContext';
-import {Text} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+
+import { Text } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { supabase } from '../lib/supabase';
 
 const HomeScreen = () => {
-  const {theme} = useTheme();
+  const { theme } = useTheme();
+  const [stats, setStats] = useState({
+    calories: 0,
+    minutes: 0,
+    workouts: 0
+  });
+
+  useEffect(() => {
+    fetchUserStats();
+  }, []);
+
+  const fetchUserStats = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      // Fetch completed workouts for the current month
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      const { data: workouts, error: workoutsError } = await supabase
+        .from('completed_workouts')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('created_at', firstDayOfMonth.toISOString())
+        .lte('created_at', lastDayOfMonth.toISOString());
+
+      if (workoutsError) throw workoutsError;
+
+      // Calculate total stats
+      const totalStats = workouts.reduce((acc, workout) => ({
+        calories: acc.calories + (Number(workout.calories_burned) || 0),
+        minutes: acc.minutes + (Number(workout.duration) || 0),
+        workouts: acc.workouts + 1
+      }), { calories: 0, minutes: 0, workouts: 0 });
+
+      setStats(totalStats);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -69,23 +113,23 @@ const HomeScreen = () => {
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeText}>Welcome back, User!</Text>
-          <Text style={{color: theme.colors.text}}>
+          <Text style={styles.welcomeText}>Welcome back!</Text>
+          <Text style={{ color: theme.colors.text }}>
             Ready for today's workout?
           </Text>
         </View>
 
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>320</Text>
+            <Text style={styles.statValue}>{stats.calories}</Text>
             <Text style={styles.statLabel}>Calories</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>45</Text>
+            <Text style={styles.statValue}>{stats.minutes}</Text>
             <Text style={styles.statLabel}>Minutes</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>8</Text>
+            <Text style={styles.statValue}>{stats.workouts}</Text>
             <Text style={styles.statLabel}>Workouts</Text>
           </View>
         </View>

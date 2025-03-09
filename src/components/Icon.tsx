@@ -1,14 +1,13 @@
 import React from 'react';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-type IconProps = {
+interface IconProps {
   name: string;
   size: number;
   color: string;
-};
+  style?: any;
+}
 
-const Icon = ({name, size, color}: IconProps) => {
-  return React.createElement(MaterialCommunityIcons, {name, size, color});
+export const Icon: React.FC<IconProps> = ({ name, size, color, style }) => {
+  return <MaterialCommunityIcons name={name} size={size} color={color} style={style} />;
 };
-
-export default Icon;

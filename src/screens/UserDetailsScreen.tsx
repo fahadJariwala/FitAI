@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,27 +8,20 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import {Text} from 'react-native';
-import {useTheme} from '../context/ThemeContext';
-import {
-  useFonts,
-  Poppins_400Regular,
-  Poppins_600SemiBold,
-} from '@expo-google-fonts/poppins';
+import { Text } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {supabase} from '../config/supabase';
-import {useAuth} from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
-const UserDetailsScreen = ({navigation, route}) => {
-  const {theme} = useTheme();
-  const {user} = useAuth();
+const UserDetailsScreen = ({ navigation, route }) => {
+  const { theme } = useTheme();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [fontsLoaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_600SemiBold,
-  });
+
 
   const [formData, setFormData] = useState({
     age: '',
@@ -37,12 +30,15 @@ const UserDetailsScreen = ({navigation, route}) => {
     fitnessGoal: '',
   });
 
+  // const fitnessGoals = [
+  //   'Weight Loss',
+  //   'Muscle Gain',
+  //   'General Fitness',
+  //   'Sports Performance',
+  //   'Flexibility',
+  // ];
   const fitnessGoals = [
-    'Weight Loss',
-    'Muscle Gain',
-    'General Fitness',
-    'Sports Performance',
-    'Flexibility',
+    ['back', 'cardio', 'chest', 'lower arms', 'lower legs', 'neck', 'shoulders', 'upper arms', 'upper legs', 'waist']
   ];
 
   const validateForm = () => {
@@ -84,7 +80,7 @@ const UserDetailsScreen = ({navigation, route}) => {
 
   const saveToSupabase = async () => {
     try {
-      const {data, error} = await supabase.from('user_details').upsert({
+      const { data, error } = await supabase.from('user_details').upsert({
         user_id: user.id,
         age: parseInt(formData.age),
         weight: parseFloat(formData.weight),
@@ -131,7 +127,7 @@ const UserDetailsScreen = ({navigation, route}) => {
       ]);
     } catch (error) {
       Alert.alert('Error', 'Failed to save your profile. Please try again.', [
-        {text: 'OK'},
+        { text: 'OK' },
       ]);
     } finally {
       setLoading(false);
@@ -230,8 +226,8 @@ const UserDetailsScreen = ({navigation, route}) => {
         style={styles.input}
         value={formData.age}
         onChangeText={text => {
-          setFormData({...formData, age: text});
-          setErrors({...errors, age: null});
+          setFormData({ ...formData, age: text });
+          setErrors({ ...errors, age: null });
         }}
         placeholder="Enter your age"
         keyboardType="numeric"
@@ -243,8 +239,8 @@ const UserDetailsScreen = ({navigation, route}) => {
         style={styles.input}
         value={formData.weight}
         onChangeText={text => {
-          setFormData({...formData, weight: text});
-          setErrors({...errors, weight: null});
+          setFormData({ ...formData, weight: text });
+          setErrors({ ...errors, weight: null });
         }}
         placeholder="Enter your weight"
         keyboardType="numeric"
@@ -256,8 +252,8 @@ const UserDetailsScreen = ({navigation, route}) => {
         style={styles.input}
         value={formData.height}
         onChangeText={text => {
-          setFormData({...formData, height: text});
-          setErrors({...errors, height: null});
+          setFormData({ ...formData, height: text });
+          setErrors({ ...errors, height: null });
         }}
         placeholder="Enter your height"
         keyboardType="numeric"
@@ -274,8 +270,8 @@ const UserDetailsScreen = ({navigation, route}) => {
               formData.fitnessGoal === goal && styles.selectedGoal,
             ]}
             onPress={() => {
-              setFormData({...formData, fitnessGoal: goal});
-              setErrors({...errors, fitnessGoal: null});
+              setFormData({ ...formData, fitnessGoal: goal });
+              setErrors({ ...errors, fitnessGoal: null });
             }}>
             <Text
               style={[
@@ -297,8 +293,8 @@ const UserDetailsScreen = ({navigation, route}) => {
         disabled={loading}>
         <LinearGradient
           colors={['#FF416C', '#FF4B2B']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
           style={styles.submitButtonGradient}>
           {loading ? (
             <ActivityIndicator color="#FFFFFF" size="small" />

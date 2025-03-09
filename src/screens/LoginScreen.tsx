@@ -14,11 +14,16 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../context/ThemeContext';
 import { typography } from '../styles/typeograpghy';
+import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = () => {
+  const navigation = useNavigation()
   const { theme } = useTheme();
+  const { signIn, signUp } = useAuth();
+
 
   const styles = StyleSheet.create({
     container: {
@@ -35,15 +40,13 @@ const LoginScreen = ({ navigation }) => {
       marginBottom: 40,
     },
     title: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      color: '#333',
+      ...typography.h1,
+      color: theme.colors.text,
       marginBottom: 10,
-      ...typography.h1
     },
     subtitle: {
-      fontSize: 16,
-      color: '#666',
+      fontSize: 14,
+      color: theme.colors.textSecondary,
       ...typography.label,
     },
     formContainer: {
@@ -52,13 +55,13 @@ const LoginScreen = ({ navigation }) => {
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#f5f5f5',
+      backgroundColor: theme.colors.inputBackground,
       borderRadius: 12,
       marginBottom: 8,
       paddingHorizontal: 15,
       height: 55,
       borderWidth: 1,
-      borderColor: '#eee',
+      borderColor: theme.colors.inputBorder,
     },
     inputIcon: {
       marginRight: 10,
@@ -66,13 +69,13 @@ const LoginScreen = ({ navigation }) => {
     input: {
       flex: 1,
       fontSize: 16,
-      color: '#333',
+      color: theme.colors.inputText,
     },
     eyeIcon: {
       padding: 10,
     },
     errorText: {
-      color: '#ff3b30',
+      color: theme.colors.error,
       fontSize: 12,
       marginBottom: 10,
       marginLeft: 5,
@@ -83,27 +86,36 @@ const LoginScreen = ({ navigation }) => {
       marginBottom: 20,
     },
     forgotPasswordText: {
-      color: '#007AFF',
+      color: theme.colors.link,
       fontSize: 14,
     },
     loginButton: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.buttonPrimary,
       borderRadius: 12,
       height: 55,
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: 20,
-      shadowColor: '#007AFF',
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
+      shadowColor: theme.colors.buttonPrimary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4.65,
+      elevation: 8,
+    },
+    signupbutton: {
+      backgroundColor: theme.colors.buttonSecondary,
+      borderRadius: 12,
+      height: 55,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 20,
+      shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 4.65,
       elevation: 8,
     },
     loginButtonText: {
-      color: '#fff',
+      color: theme.colors.buttonPrimaryText,
       fontSize: 18,
       fontWeight: 'bold',
     },
@@ -113,11 +125,24 @@ const LoginScreen = ({ navigation }) => {
       marginTop: 20,
     },
     signupText: {
-      color: '#666',
+      color: theme.colors.textSecondary,
       fontSize: 14,
     },
     signupLink: {
-      color: '#007AFF',
+      color: theme.colors.link,
+      fontSize: 14,
+      fontWeight: 'bold',
+    },
+    loginLink: {
+      marginTop: 20,
+      alignItems: 'center',
+    },
+    loginLinkText: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+    },
+    loginText: {
+      color: theme.colors.link,
       fontSize: 14,
       fontWeight: 'bold',
     },
@@ -130,6 +155,8 @@ const LoginScreen = ({ navigation }) => {
     email: '',
     password: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -162,11 +189,54 @@ const LoginScreen = ({ navigation }) => {
     return isValid;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (validateForm()) {
-      // Proceed with login
-      // Add your login logic here
-      navigation.replace('UserDetails');
+      try {
+        setLoading(true);
+        const { error } = await signIn(email, password);
+
+        if (error) {
+          throw error;
+        }
+
+        // Reset navigation stack and navigate to MainApp
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainApp' }],
+        });
+
+      } catch (error: any) {
+        showAlert({
+          type: 'error',
+          title: 'Login Failed',
+          message: error?.message || 'Invalid email or password',
+          buttons: [
+            {
+              text: 'OK',
+              style: 'default',
+              onPress: () => { },
+            },
+          ],
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+
+  const handleSignUp = async () => {
+    if (validateForm()) {
+      try {
+        setCreating(true);
+        await signUp(email, password);
+
+      } catch (error) {
+        Alert.alert('Error', error.message);
+      } finally {
+        setCreating(false);
+        navigation.replace('UserDetails');
+      }
     }
   };
 
@@ -180,15 +250,16 @@ const LoginScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>Welcome to Fit AI!</Text>
+          <Text style={styles.title}>Welcome to FitAI!</Text>
           <Text style={styles.subtitle}>Sign in to continue your fitness journey</Text>
         </View>
 
         <View style={styles.formContainer}>
           <View style={styles.inputContainer}>
-            <Icon name="email-outline" size={20} color="#666" style={styles.inputIcon} />
+            <Icon name="email-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
+              placeholderTextColor={theme.colors.textSecondary}
               placeholder="Email"
               value={email}
               onChangeText={(text) => {
@@ -205,9 +276,10 @@ const LoginScreen = ({ navigation }) => {
           {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
           <View style={styles.inputContainer}>
-            <Icon name="lock-outline" size={20} color="#666" style={styles.inputIcon} />
+            <Icon name="lock-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
             <TextInput
               style={[styles.input, { flex: 1 }]}
+              placeholderTextColor={theme.colors.textSecondary}
               placeholder="Password"
               value={password}
               onChangeText={(text) => {
@@ -225,7 +297,7 @@ const LoginScreen = ({ navigation }) => {
               <Icon
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
                 size={20}
-                color="#666"
+                color={theme.colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
@@ -236,19 +308,22 @@ const LoginScreen = ({ navigation }) => {
           <TouchableOpacity
             style={styles.loginButton}
             onPress={handleLogin}
-          >
-            <Text style={styles.loginButtonText}>Login</Text>
+            disabled={loading}>
+            <Text style={styles.loginButtonText}>   {loading ? 'Loading...' : 'Login'}</Text>
           </TouchableOpacity>
 
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-              <Text style={styles.signupLink}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.loginLink}
+            onPress={() => navigation.navigate('SignupScreen')}
+          >
+            <Text style={styles.loginLinkText}>
+              Don't have an account?{' '}
+              <Text style={styles.loginText}>Sign UP</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoidingView >
   );
 };
 

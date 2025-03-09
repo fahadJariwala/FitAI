@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -12,12 +12,53 @@ import { Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const ProfileScreen = () => {
   const { theme, themeType, setThemeType } = useTheme();
   const navigation = useNavigation();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const [profile, setProfile] = useState({
+    full_name: '',
+    email: '',
+    age: null,
+    weight: null,
+    height: null,
+  });
 
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+      if (!currentUser) {
+        console.log('No user found');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error.message);
+        return;
+      }
+
+      if (data) {
+        console.log('Profile data:', data);
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
+      Alert.alert('Error', 'Failed to load profile data');
+    }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -104,20 +145,21 @@ const ProfileScreen = () => {
     },
   });
 
-  const handleThemeChange = (type: 'light' | 'dark' | 'system') => {
-    setThemeType(type);
+  const handleThemeChange = async (type: 'light' | 'dark' | 'system') => {
+
+    try {
+      console.log('Changing theme to:', type);
+      await AsyncStorage.setItem('themeType', type);
+      setThemeType(type);
+    } catch (error) {
+      console.error('Error saving theme:', error);
+    }
   };
 
   const handleLogout = async () => {
     try {
-      // Clear user details from AsyncStorage
       await AsyncStorage.removeItem('userDetails');
-
-      // // Sign out from Supabase
-      // await supabase.auth.signOut();
-      signOut()
-
-      // Navigate to login screen
+      signOut();
       navigation.replace('LoginScreen');
     } catch (error) {
       console.error('Error during logout:', error);
@@ -130,26 +172,29 @@ const ProfileScreen = () => {
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>JD</Text>
+            <Text style={styles.avatarText}>
+              {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
+            </Text>
           </View>
-          <Text style={styles.name}>John Doe</Text>
-          <Text style={styles.email}>john.doe@example.com</Text>
+          <Text style={styles.name}>{profile.full_name || 'Fahad Jariwala'}</Text>
+          <Text style={styles.email}>{profile.email || user?.email || 'No email'}</Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
+          <View style={[styles.row, styles.rowLast]}>
+            <Text style={styles.rowLabel}>Name</Text>
+            <Text style={styles.rowValue}>{profile.full_name ? `${profile.height} cm` : 'N/A'}</Text>
+          </View>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Age</Text>
-            <Text style={styles.rowValue}>28</Text>
+            <Text style={styles.rowValue}>{profile.age || 'N/A'}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Weight</Text>
-            <Text style={styles.rowValue}>75 kg</Text>
+            <Text style={styles.rowValue}>{profile.weight ? `${profile.weight} kg` : 'N/A'}</Text>
           </View>
-          <View style={[styles.row, styles.rowLast]}>
-            <Text style={styles.rowLabel}>Height</Text>
-            <Text style={styles.rowValue}>180 cm</Text>
-          </View>
+
         </View>
 
         <View style={styles.section}>
@@ -157,45 +202,26 @@ const ProfileScreen = () => {
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Theme</Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity onPress={() => handleThemeChange('light')}>
-                <Text
-                  style={[
-                    styles.rowValue,
-                    themeType === 'light' && { color: theme.colors.primary },
-                  ]}>
-                  Light
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleThemeChange('dark')}>
-                <Text
-                  style={[
-                    styles.rowValue,
-                    themeType === 'dark' && { color: theme.colors.primary },
-                  ]}>
-                  Dark
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleThemeChange('system')}>
-                <Text
-                  style={[
-                    styles.rowValue,
-                    themeType === 'system' && { color: theme.colors.primary },
-                  ]}>
-                  System
-                </Text>
-              </TouchableOpacity>
+              {(['light', 'dark', 'system'] as const).map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => handleThemeChange(type)}
+                  disabled={themeType === type}
+                >
+                  <Text
+                    style={[
+                      styles.rowValue,
+                      { opacity: 1 },
+                      themeType === type && {
+                        color: theme.colors.primary,
+                        fontWeight: 'bold'
+                      },
+                    ]}>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          </View>
-          <View style={[styles.row, styles.rowLast]}>
-            <Text style={styles.rowLabel}>Notifications</Text>
-            <Switch
-              value={true}
-              onValueChange={() => { }}
-              trackColor={{
-                false: theme.colors.border,
-                true: theme.colors.primary,
-              }}
-            />
           </View>
         </View>
 

@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { useNavigation } from '@react-navigation/native';
 
 const supabaseUrl = 'https://xbfxdcrklrhczknpiior.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiZnhkY3JrbHJoY3prbnBpaW9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA1NDkwOTgsImV4cCI6MjA1NjEyNTA5OH0.4s5hQK3qST1ryaoB-Ts38P77W6l-tZfSjy4w07kMpjA';
@@ -12,4 +13,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         persistSession: true,
         detectSessionInUrl: false,
     },
-}); 
+    db: {
+        schema: 'public'
+    }
+});
+
+// Add error logging for debugging
+supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Supabase auth event:', event);
+    console.log('Session:', session);
+});
+
+
+
+
+

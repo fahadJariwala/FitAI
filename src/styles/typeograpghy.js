@@ -2,12 +2,12 @@
 export const typography = {
   // Headings
   h1: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: 'Poppins-SemiBold',
     fontSize: 32,
     lineHeight: 40,
   },
   h2: {
-    fontFamily: 'Poppins-SemiBold',
+    fontFamily: 'Poppins-Medium',
     fontSize: 24,
     lineHeight: 32,
   },
