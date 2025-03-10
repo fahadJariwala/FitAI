@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   ScrollView,
@@ -7,17 +7,17 @@ import {
   Switch,
   Alert,
 } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { Text } from 'react-native';
+import {useTheme} from '../context/ThemeContext';
+import {Text} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
+import {useNavigation} from '@react-navigation/native';
+import {useAuth} from '../context/AuthContext';
+import {supabase} from '../lib/supabase';
 
 const ProfileScreen = () => {
-  const { theme, themeType, setThemeType } = useTheme();
+  const {theme, themeType, setThemeType} = useTheme();
   const navigation = useNavigation();
-  const { signOut, user } = useAuth();
+  const {signOut, user} = useAuth();
   const [profile, setProfile] = useState({
     full_name: '',
     email: '',
@@ -32,14 +32,16 @@ const ProfileScreen = () => {
 
   const fetchProfile = async () => {
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const {
+        data: {user: currentUser},
+      } = await supabase.auth.getUser();
 
       if (!currentUser) {
         console.log('No user found');
         return;
       }
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from('profiles')
         .select('*')
         .eq('id', currentUser.id)
@@ -146,7 +148,6 @@ const ProfileScreen = () => {
   });
 
   const handleThemeChange = async (type: 'light' | 'dark' | 'system') => {
-
     try {
       console.log('Changing theme to:', type);
       await AsyncStorage.setItem('themeType', type);
@@ -173,18 +174,24 @@ const ProfileScreen = () => {
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
             <Text style={styles.avatarText}>
-              {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
+              {profile.full_name
+                ? profile.full_name.charAt(0).toUpperCase()
+                : 'U'}
             </Text>
           </View>
-          <Text style={styles.name}>{profile.full_name || 'Fahad Jariwala'}</Text>
-          <Text style={styles.email}>{profile.email || user?.email || 'No email'}</Text>
+          <Text style={styles.name}>{profile.full_name || 'User'}</Text>
+          <Text style={styles.email}>
+            {profile.email || user?.email || 'No email'}
+          </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
           <View style={[styles.row, styles.rowLast]}>
             <Text style={styles.rowLabel}>Name</Text>
-            <Text style={styles.rowValue}>{profile.full_name ? `${profile.height} cm` : 'N/A'}</Text>
+            <Text style={styles.rowValue}>
+              {profile.full_name ? `${profile.height} cm` : 'N/A'}
+            </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Age</Text>
@@ -192,12 +199,13 @@ const ProfileScreen = () => {
           </View>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Weight</Text>
-            <Text style={styles.rowValue}>{profile.weight ? `${profile.weight} kg` : 'N/A'}</Text>
+            <Text style={styles.rowValue}>
+              {profile.weight ? `${profile.weight} kg` : 'N/A'}
+            </Text>
           </View>
-
         </View>
 
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>App Settings</Text>
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Theme</Text>
@@ -223,7 +231,7 @@ const ProfileScreen = () => {
               ))}
             </View>
           </View>
-        </View>
+        </View> */}
 
         <TouchableOpacity style={styles.button} onPress={handleLogout}>
           <Text style={styles.buttonText}>Sign Out</Text>

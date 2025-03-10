@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   ScrollView,
@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { Text } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {useTheme} from '../context/ThemeContext';
+import {Text} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 // API configuration
@@ -50,7 +51,7 @@ const workouts = [
 ];
 
 const WorkoutScreen = () => {
-  const { theme } = useTheme();
+  const {theme} = useTheme();
   const navigation = useNavigation();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState([]);
@@ -63,9 +64,30 @@ const WorkoutScreen = () => {
       try {
         const response = await fetch(
           'https://exercisedb.p.rapidapi.com/exercises/targetList',
-          { headers: API_CONFIG.headers },
+          {headers: API_CONFIG.headers},
         );
-        const data = await response.json();
+        // const data = await response.json();
+        const data = [
+          'abductors',
+          'abs',
+          'adductors',
+          'biceps',
+          'calves',
+          'cardiovascular system',
+          'delts',
+          'forearms',
+          'glutes',
+          'hamstrings',
+          'lats',
+          'levator scapulae',
+          'pectorals',
+          'quads',
+          'serratus anterior',
+          'spine',
+          'traps',
+          'triceps',
+          'upper back',
+        ];
         setCategories(['All', ...data]);
         setSelectedCategory('All');
       } catch (error) {
@@ -86,7 +108,7 @@ const WorkoutScreen = () => {
         }
         url += '?limit=10&offset=0';
 
-        const response = await fetch(url, { headers: API_CONFIG.headers });
+        const response = await fetch(url, {headers: API_CONFIG.headers});
         const data = await response.json();
         setWorkouts(data);
       } catch (error) {
@@ -101,7 +123,7 @@ const WorkoutScreen = () => {
     }
   }, [selectedCategory]);
 
-  const handleExercisePress = (exercise) => {
+  const handleExercisePress = exercise => {
     navigation.navigate('ExerciseDetail', {
       exercise: {
         ...exercise,
@@ -201,7 +223,38 @@ const WorkoutScreen = () => {
       alignItems: 'center',
       padding: theme.spacing.m,
     },
+    loadingCard: {
+      backgroundColor: theme.colors.card,
+      borderRadius: theme.borderRadii.m,
+      marginBottom: theme.spacing.m,
+      overflow: 'hidden',
+      elevation: 3,
+      height: 300, // Adjust based on your card height
+    },
+    shimmer: {
+      width: '100%',
+      height: '100%',
+      backgroundColor: theme.colors.card,
+      opacity: 0.5,
+    },
   });
+
+  const renderLoadingCards = () => {
+    return Array(3)
+      .fill(null)
+      .map((_, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            updatedStyles.loadingCard,
+            {
+              opacity: loading ? 0.5 : 1,
+            },
+          ]}>
+          <View style={updatedStyles.shimmer} />
+        </Animated.View>
+      ));
+  };
 
   return (
     <ScrollView style={updatedStyles.container}>
@@ -217,14 +270,14 @@ const WorkoutScreen = () => {
                 style={[
                   updatedStyles.categoryButton,
                   selectedCategory === category &&
-                  updatedStyles.categoryButtonSelected,
+                    updatedStyles.categoryButtonSelected,
                 ]}
                 onPress={() => setSelectedCategory(category)}>
                 <Text
                   style={[
                     updatedStyles.categoryText,
                     selectedCategory === category &&
-                    updatedStyles.categoryTextSelected,
+                      updatedStyles.categoryTextSelected,
                   ]}>
                   {category}
                 </Text>
@@ -233,52 +286,47 @@ const WorkoutScreen = () => {
           </ScrollView>
         </View>
 
-        {loading ? (
-          <View style={updatedStyles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
-        ) : (
-          workouts.map(workout => (
-            <TouchableOpacity
-              key={workout.id}
-              style={updatedStyles.workoutCard}
-              onPress={() => handleExercisePress(workout)}
-              activeOpacity={0.7}>
-              <Image
-                source={{ uri: workout.gifUrl }}
-                style={updatedStyles.workoutImage}
-              />
-              <View style={updatedStyles.workoutContent}>
-                <Text style={updatedStyles.workoutTitle}>{workout.name}</Text>
-                <View style={updatedStyles.workoutDetails}>
-                  <View style={updatedStyles.workoutInfo}>
-                    {/* <Icon
+        {loading
+          ? renderLoadingCards()
+          : workouts.map(workout => (
+              <TouchableOpacity
+                key={workout.id}
+                style={updatedStyles.workoutCard}
+                onPress={() => handleExercisePress(workout)}
+                activeOpacity={0.7}>
+                <Image
+                  source={{uri: workout.gifUrl}}
+                  style={updatedStyles.workoutImage}
+                />
+                <View style={updatedStyles.workoutContent}>
+                  <Text style={updatedStyles.workoutTitle}>{workout.name}</Text>
+                  <View style={updatedStyles.workoutDetails}>
+                    <View style={updatedStyles.workoutInfo}>
+                      {/* <Icon
                       name="body-part"
                       size={16}
                       color={theme.colors.text}
                       style={{ marginRight: 4 }}
                     /> */}
-                    <Text style={updatedStyles.workoutInfoText}>
-                      Target: {workout.target}
-                    </Text>
-                  </View>
-                  <View style={updatedStyles.workoutInfo}>
-                    {/* <Icon
+                      <Text style={updatedStyles.workoutInfoText}>
+                        Target: {workout.target}
+                      </Text>
+                    </View>
+                    <View style={updatedStyles.workoutInfo}>
+                      {/* <Icon
                       name="dumbbell"
                       size={16}
                       color={theme.colors.text}
                       style={{ marginRight: 4 }}
                     /> */}
-                    <Text style={updatedStyles.workoutInfoText}>
-                      Equipment: {workout.equipment}
-
-                    </Text>
+                      <Text style={updatedStyles.workoutInfoText}>
+                        Equipment: {workout.equipment}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
+              </TouchableOpacity>
+            ))}
       </View>
     </ScrollView>
   );

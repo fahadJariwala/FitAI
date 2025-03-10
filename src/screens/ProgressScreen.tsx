@@ -1,9 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Dimensions, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { Text } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
-import { supabase } from '../lib/supabase';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+  TouchableOpacity,
+  Platform,
+  Animated,
+} from 'react-native';
+import {useTheme} from '../context/ThemeContext';
+import {Text} from 'react-native';
+import {LineChart} from 'react-native-chart-kit';
+import {supabase} from '../lib/supabase';
+import {useFocusEffect} from '@react-navigation/native';
 
 interface WorkoutData {
   id: string;
@@ -17,14 +27,55 @@ interface WorkoutData {
   updated_at: string;
 }
 
+const SkeletonLoader = ({theme, width, height, style}) => {
+  const animatedValue = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, []);
+
+  const opacity = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.7],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          backgroundColor: theme.colors.card,
+          opacity,
+          borderRadius: theme.borderRadii.m,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
 const ProgressScreen = () => {
-  const { theme } = useTheme();
+  const {theme} = useTheme();
   const screenWidth = Dimensions.get('window').width;
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [weeklyData, setWeeklyData] = useState({
     labels: [],
-    datasets: [{ data: [] }],
+    datasets: [{data: []}],
   });
   const [monthlyProgress, setMonthlyProgress] = useState({
     workouts: 0,
@@ -39,7 +90,10 @@ const ProgressScreen = () => {
       setError(null);
 
       // Check authentication first
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: {user},
+        error: authError,
+      } = await supabase.auth.getUser();
 
       if (authError) {
         console.error('Auth error:', authError);
@@ -53,7 +107,7 @@ const ProgressScreen = () => {
       }
 
       // Test query to check table access
-      const { data, error: queryError } = await supabase
+      const {data, error: queryError} = await supabase
         .from('workouts')
         .select('id')
         .limit(1);
@@ -77,17 +131,25 @@ const ProgressScreen = () => {
     }
   };
 
-  useEffect(() => {
-    const initializeData = async () => {
-      const isSetupValid = await checkDatabaseSetup();
-      if (isSetupValid) {
-        await fetchWorkoutData();
-      }
-      setIsLoading(false);
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const initializeData = async () => {
+        setIsLoading(true);
+        const isSetupValid = await checkDatabaseSetup();
+        if (isSetupValid) {
+          await fetchWorkoutData();
+        }
+        setIsLoading(false);
+      };
 
-    initializeData();
-  }, []);
+      initializeData();
+
+      // Optional: Return a cleanup function if needed
+      return () => {
+        // Any cleanup code if necessary
+      };
+    }, []), // Empty dependency array since we want this to run on every focus
+  );
 
   const fetchWorkoutData = async () => {
     try {
@@ -95,7 +157,9 @@ const ProgressScreen = () => {
       setError(null);
 
       // 1. Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {user},
+      } = await supabase.auth.getUser();
       console.log('Current user ID:', user?.id); // Debug log
 
       if (!user) {
@@ -104,7 +168,7 @@ const ProgressScreen = () => {
       }
 
       // 2. Fetch workouts without date filter first to debug
-      const { data: workouts, error } = await supabase
+      const {data: workouts, error} = await supabase
         .from('workouts')
         .select('*')
         .eq('user_id', user.id);
@@ -124,7 +188,7 @@ const ProgressScreen = () => {
         // Initialize with empty data
         setWeeklyData({
           labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-          datasets: [{ data: [0, 0, 0, 0, 0, 0, 0] }]
+          datasets: [{data: [0, 0, 0, 0, 0, 0, 0]}],
         });
         setMonthlyProgress({
           workouts: 0,
@@ -145,7 +209,6 @@ const ProgressScreen = () => {
       // 4. Update state
       setWeeklyData(processedData);
       setMonthlyProgress(monthlyStats);
-
     } catch (e) {
       console.error('Error in fetchWorkoutData:', e);
       setError('Failed to load workout data');
@@ -182,7 +245,7 @@ const ProgressScreen = () => {
       marginBottom: theme.spacing.m,
       elevation: 2,
       shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: {width: 0, height: 2},
       shadowOpacity: 0.1,
       shadowRadius: 4,
     },
@@ -204,7 +267,7 @@ const ProgressScreen = () => {
       marginBottom: theme.spacing.xl,
       elevation: 2,
       shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: {width: 0, height: 2},
       shadowOpacity: 0.1,
       shadowRadius: 4,
     },
@@ -271,6 +334,10 @@ const ProgressScreen = () => {
       fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
       marginBottom: 5,
     },
+    skeleton: {
+      backgroundColor: theme.colors.card,
+      borderRadius: theme.borderRadii.m,
+    },
   });
 
   if (error) {
@@ -279,8 +346,7 @@ const ProgressScreen = () => {
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={checkDatabaseSetup}
-        >
+          onPress={checkDatabaseSetup}>
           <Text style={styles.retryText}>Retry</Text>
         </TouchableOpacity>
       </View>
@@ -289,34 +355,61 @@ const ProgressScreen = () => {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading your progress...</Text>
-      </View>
+      <ScrollView style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>Monthly Progress</Text>
+          <View style={styles.statsContainer}>
+            {[1, 2, 3, 4].map((_, index) => (
+              <View key={index} style={styles.statCard}>
+                <SkeletonLoader
+                  theme={theme}
+                  width={80}
+                  height={30}
+                  style={{marginBottom: 8}}
+                />
+                <SkeletonLoader theme={theme} width={60} height={20} />
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.chartContainer}>
+            <Text style={styles.chartTitle}>Weekly Activity</Text>
+            <SkeletonLoader
+              theme={theme}
+              width={screenWidth - 2 * theme.spacing.m - 2 * theme.spacing.m}
+              height={220}
+            />
+          </View>
+        </View>
+      </ScrollView>
     );
   }
 
-  console.log("monthlyProgress====", monthlyProgress);
+  console.log('monthlyProgress====', monthlyProgress);
 
   const renderDebugInfo = () => {
-    if (__DEV__) {
-      return (
-        <View style={styles.debugContainer}>
-          <Text style={styles.debugText}>
-            Monthly Progress: {'\n'}
-            Workouts: {monthlyProgress.workouts}{'\n'}
-            Calories: {monthlyProgress.calories}{'\n'}
-            Duration: {monthlyProgress.duration}{'\n'}
-            Streak: {monthlyProgress.streak}
-          </Text>
-          <Text style={styles.debugText}>
-            Weekly Data: {'\n'}
-            Labels: {weeklyData.labels.join(', ')}{'\n'}
-            Data: {weeklyData.datasets[0].data.join(', ')}
-          </Text>
-        </View>
-      );
-    }
+    // if (__DEV__) {
+    //   return (
+    //     <View style={styles.debugContainer}>
+    //       <Text style={styles.debugText}>
+    //         Monthly Progress: {'\n'}
+    //         Workouts: {monthlyProgress.workouts}
+    //         {'\n'}
+    //         Calories: {monthlyProgress.calories}
+    //         {'\n'}
+    //         Duration: {monthlyProgress.duration}
+    //         {'\n'}
+    //         Streak: {monthlyProgress.streak}
+    //       </Text>
+    //       <Text style={styles.debugText}>
+    //         Weekly Data: {'\n'}
+    //         Labels: {weeklyData.labels.join(', ')}
+    //         {'\n'}
+    //         Data: {weeklyData.datasets[0].data.join(', ')}
+    //       </Text>
+    //     </View>
+    //   );
+    // }
     return null;
   };
 
@@ -413,14 +506,16 @@ const processWorkoutData = (workouts: WorkoutData[]) => {
     }
   });
 
-  console.log('Processed data:', { labels, data }); // Debug log
+  console.log('Processed data:', {labels, data}); // Debug log
 
   return {
     labels,
-    datasets: [{
-      data,
-      color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
-    }]
+    datasets: [
+      {
+        data,
+        color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+      },
+    ],
   };
 };
 
@@ -451,14 +546,14 @@ const calculateStreak = (workouts: WorkoutData[]) => {
   if (!workouts || workouts.length === 0) return 0;
 
   // Sort workouts by date in descending order
-  const sortedWorkouts = [...workouts].sort((a, b) =>
-    new Date(b.date).getTime() - new Date(a.date).getTime()
+  const sortedWorkouts = [...workouts].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
   // Get unique dates
-  const uniqueDates = Array.from(new Set(
-    sortedWorkouts.map(w => new Date(w.date).toDateString())
-  ));
+  const uniqueDates = Array.from(
+    new Set(sortedWorkouts.map(w => new Date(w.date).toDateString())),
+  );
 
   console.log('Unique workout dates:', uniqueDates);
 
@@ -480,7 +575,9 @@ const calculateStreak = (workouts: WorkoutData[]) => {
     const previousDate = new Date(currentDate);
     previousDate.setDate(previousDate.getDate() - 1);
 
-    if (new Date(uniqueDates[i]).toDateString() === previousDate.toDateString()) {
+    if (
+      new Date(uniqueDates[i]).toDateString() === previousDate.toDateString()
+    ) {
       streak++;
       currentDate = previousDate;
     } else {
@@ -498,23 +595,22 @@ const addWorkout = async (workoutData: {
   workout_type: string;
   notes?: string;
 }) => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: {user},
+  } = await supabase.auth.getUser();
 
   if (!user) return;
 
-  const { data, error } = await supabase
-    .from('workouts')
-    .insert([
-      {
-        user_id: user.id,
-        date: new Date().toISOString(),
-        ...workoutData
-      }
-    ]);
+  const {data, error} = await supabase.from('workouts').insert([
+    {
+      user_id: user.id,
+      date: new Date().toISOString(),
+      ...workoutData,
+    },
+  ]);
 
-  console.log('Workout added:', { data, error });
-  return { data, error };
+  console.log('Workout added:', {data, error});
+  return {data, error};
 };
 
 export default ProgressScreen;
-
