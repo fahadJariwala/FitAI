@@ -176,7 +176,7 @@ const ProfileScreen = () => {
               {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
             </Text>
           </View>
-          <Text style={styles.name}>{profile.full_name || 'Fahad Jariwala'}</Text>
+          <Text style={styles.name}>{profile.full_name || 'User'}</Text>
           <Text style={styles.email}>{profile.email || user?.email || 'No email'}</Text>
         </View>
 

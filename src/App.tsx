@@ -6,8 +6,10 @@ import { AuthProvider } from './context/AuthContext';
 import AppNavigator from './navigation/AppNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LogBox } from 'react-native';
+import SplashScreen from 'react-native-splash-screen';
 
 export default function App() {
+    SplashScreen.hide();
 
     return (
         <SafeAreaProvider>
