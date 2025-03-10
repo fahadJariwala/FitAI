@@ -23,7 +23,7 @@ const HomeScreen = () => {
   const navigation = useNavigation();
   const [stats, setStats] = useState({
     calories: 0,
-    minutes: 0,
+    duration: 0,
     workouts: 0,
   });
   const [selectedBodyPart, setSelectedBodyPart] = useState('chest');
@@ -45,7 +45,6 @@ const HomeScreen = () => {
   ];
 
   useEffect(() => {
-    fetchUserStats();
     fetchExercises(selectedBodyPart);
   }, [selectedBodyPart]);
 
@@ -70,41 +69,178 @@ const HomeScreen = () => {
     }
   }, [loading]);
 
+  useEffect(() => {
+    fetchWorkoutData();
+  }, []);
+
   const fetchUserStats = async () => {
     try {
       const {
         data: {user},
       } = await supabase.auth.getUser();
-
       if (!user) return;
 
-      // Fetch completed workouts for the current month
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      // Fetch from both tables
+      const [workoutsResponse, exerciseTrackingResponse] = await Promise.all([
+        supabase.from('workouts').select('*').eq('user_id', user.id),
+        supabase.from('exercise_tracking').select('*').eq('user_id', user.id),
+      ]);
 
-      const {data: workouts, error: workoutsError} = await supabase
-        .from('completed_workouts')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('created_at', firstDayOfMonth.toISOString())
-        .lte('created_at', lastDayOfMonth.toISOString());
+      if (workoutsResponse.error) {
+        console.error('Workouts fetch error:', workoutsResponse.error);
+        return;
+      }
 
-      if (workoutsError) throw workoutsError;
+      if (exerciseTrackingResponse.error) {
+        console.error(
+          'Exercise tracking fetch error:',
+          exerciseTrackingResponse.error,
+        );
+        return;
+      }
 
-      // Calculate total stats
-      const totalStats = workouts.reduce(
-        (acc, workout) => ({
-          calories: acc.calories + (Number(workout.calories_burned) || 0),
-          minutes: acc.minutes + (Number(workout.duration) || 0),
-          workouts: acc.workouts + 1,
-        }),
-        {calories: 0, minutes: 0, workouts: 0},
-      );
+      // Calculate totals from both workouts and exercise tracking
+      const workouts = workoutsResponse.data || [];
+      const exerciseTracking = exerciseTrackingResponse.data || [];
 
-      setStats(totalStats);
+      console.log('Workouts:', workouts); // Debug log
+      console.log('Exercise Tracking:', exerciseTracking); // Debug log
+
+      const workoutCalories = workouts.reduce((sum, workout) => {
+        const calories = Number(workout.calories) || 0;
+        return sum + calories;
+      }, 0);
+
+      const workoutMinutes = workouts.reduce((sum, workout) => {
+        const duration = Number(workout.duration) || 0;
+        return sum + duration;
+      }, 0);
+
+      const exerciseCalories = exerciseTracking.reduce((sum, exercise) => {
+        const calories = Number(exercise.calories) || 0;
+        return sum + calories;
+      }, 0);
+
+      const exerciseMinutes = exerciseTracking.reduce((sum, exercise) => {
+        const duration = Number(exercise.duration) || 0;
+        return sum + duration;
+      }, 0);
+
+      const totalCalories = workoutCalories + exerciseCalories;
+      const totalMinutes = workoutMinutes + exerciseMinutes;
+
+      console.log('Total Calories:', totalCalories); // Debug log
+      console.log('Total Minutes:', totalMinutes); // Debug log
+
+      setStats({
+        calories: totalCalories,
+        duration: totalMinutes,
+        workouts: workouts.length + exerciseTracking.length,
+      });
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error('Error fetching user stats:', error);
+    }
+  };
+
+  const calculateMonthlyStats = (workouts: WorkoutData[]) => {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const monthWorkouts = workouts.filter(workout => {
+      const workoutDate = new Date(workout.date);
+      return workoutDate >= monthStart;
+    });
+
+    return {
+      workouts: monthWorkouts.length,
+      calories: monthWorkouts.reduce((sum, w) => sum + (w.calories || 0), 0),
+      duration: monthWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0),
+    };
+  };
+
+  const fetchWorkoutData = async () => {
+    try {
+      const {
+        data: {user},
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        return;
+      }
+
+      // Fetch from both tables
+      const [workoutsResponse, exerciseTrackingResponse] = await Promise.all([
+        supabase.from('workouts').select('*').eq('user_id', user.id),
+        supabase.from('exercise_tracking').select('*').eq('user_id', user.id),
+      ]);
+
+      if (workoutsResponse.error) {
+        console.error('Workouts fetch error:', workoutsResponse.error);
+      }
+
+      if (exerciseTrackingResponse.error) {
+        console.error(
+          'Exercise tracking fetch error:',
+          exerciseTrackingResponse.error,
+        );
+      }
+
+      // Combine and normalize data from both sources
+      const combinedWorkouts = [
+        ...(workoutsResponse.data || []).map(w => ({
+          id: w.id,
+          user_id: w.user_id,
+          date: w.date,
+          calories: w.calories || 0,
+          duration: w.duration || 0,
+          workout_type: w.workout_type,
+          notes: w.notes,
+          created_at: w.created_at,
+          updated_at: w.updated_at,
+        })),
+        ...(exerciseTrackingResponse.data || []).map(e => ({
+          id: e.id,
+          user_id: e.user_id,
+          date: e.completed_at || e.created_at, // Use completed_at if available
+          calories: calculateEstimatedCalories(
+            e.duration_minutes,
+            e.exercise_name,
+          ), // Helper function to estimate calories
+          duration: e.duration_minutes || 0,
+          workout_type: e.exercise_name,
+          notes: `${e.target_muscle || ''} ${e.equipment_used || ''} ${
+            e.body_part || ''
+          }`.trim(),
+          created_at: e.created_at,
+          updated_at: e.updated_at,
+        })),
+      ];
+      console.log('combinedWorkouts===', combinedWorkouts);
+
+      if (combinedWorkouts.length === 0) {
+        console.log('No workout data found for user:', user.id);
+
+        setStats({
+          workouts: 0,
+          calories: 0,
+          duration: 0,
+          // streak: 0,
+        });
+        return;
+      }
+
+      // Process the combined data
+
+      const monthlyStats = calculateMonthlyStats(combinedWorkouts);
+
+      // Update state
+      console.log('monthlyStats==', monthlyStats);
+
+      setStats(monthlyStats);
+    } catch (e) {
+      console.error('Error in fetchWorkoutData:', e);
+    } finally {
     }
   };
 
@@ -347,7 +483,7 @@ const HomeScreen = () => {
             <Text style={styles.statLabel}>Calories</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.minutes}</Text>
+            <Text style={styles.statValue}>{stats.duration}</Text>
             <Text style={styles.statLabel}>Minutes</Text>
           </View>
           <View style={styles.statCard}>
@@ -386,6 +522,35 @@ const HomeScreen = () => {
       </View>
     </ScrollView>
   );
+};
+// Add this helper function to estimate calories based on duration and exercise type
+const calculateEstimatedCalories = (
+  durationMinutes: number,
+  exerciseType: string,
+): number => {
+  // These are rough estimates and should be adjusted based on your needs
+  const MET = {
+    walking: 3.5,
+    running: 8,
+    cycling: 7.5,
+    swimming: 6,
+    weightlifting: 3.5,
+    yoga: 2.5,
+    hiit: 8,
+    default: 4, // default MET value for unknown exercises
+  };
+
+  // Average weight in kg (you might want to make this user-specific)
+  const averageWeight = 70;
+
+  // Calculate calories using the MET formula
+  // Calories = MET × Weight (kg) × Duration (hours)
+  const exerciseTypeKey =
+    exerciseType?.toLowerCase().replace(/\s+/g, '') || 'default';
+  const met = MET[exerciseTypeKey] || MET.default;
+  const hours = durationMinutes / 60;
+
+  return Math.round(met * averageWeight * hours);
 };
 
 export default HomeScreen;

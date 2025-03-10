@@ -156,36 +156,65 @@ const ProgressScreen = () => {
       setIsLoading(true);
       setError(null);
 
-      // 1. Get current user
       const {
         data: {user},
       } = await supabase.auth.getUser();
-      console.log('Current user ID:', user?.id); // Debug log
 
       if (!user) {
         setError('No user logged in');
         return;
       }
 
-      // 2. Fetch workouts without date filter first to debug
-      const {data: workouts, error} = await supabase
-        .from('workouts')
-        .select('*')
-        .eq('user_id', user.id);
+      // Fetch from both tables
+      const [workoutsResponse, exerciseTrackingResponse] = await Promise.all([
+        supabase.from('workouts').select('*').eq('user_id', user.id),
+        supabase.from('exercise_tracking').select('*').eq('user_id', user.id),
+      ]);
 
-      // Debug logs
-      console.log('Raw workouts from DB:', workouts);
-      console.log('Fetch error if any:', error);
-
-      if (error) {
-        console.error('Fetch error:', error);
-        setError(`Failed to fetch workouts: ${error.message}`);
-        return;
+      if (workoutsResponse.error) {
+        console.error('Workouts fetch error:', workoutsResponse.error);
       }
 
-      if (!workouts || workouts.length === 0) {
-        console.log('No workouts found for user:', user.id);
-        // Initialize with empty data
+      if (exerciseTrackingResponse.error) {
+        console.error(
+          'Exercise tracking fetch error:',
+          exerciseTrackingResponse.error,
+        );
+      }
+
+      // Combine and normalize data from both sources
+      const combinedWorkouts = [
+        ...(workoutsResponse.data || []).map(w => ({
+          id: w.id,
+          user_id: w.user_id,
+          date: w.date,
+          calories: w.calories || 0,
+          duration: w.duration || 0,
+          workout_type: w.workout_type,
+          notes: w.notes,
+          created_at: w.created_at,
+          updated_at: w.updated_at,
+        })),
+        ...(exerciseTrackingResponse.data || []).map(e => ({
+          id: e.id,
+          user_id: e.user_id,
+          date: e.completed_at || e.created_at, // Use completed_at if available
+          calories: calculateEstimatedCalories(
+            e.duration_minutes,
+            e.exercise_name,
+          ), // Helper function to estimate calories
+          duration: e.duration_minutes || 0,
+          workout_type: e.exercise_name,
+          notes: `${e.target_muscle || ''} ${e.equipment_used || ''} ${
+            e.body_part || ''
+          }`.trim(),
+          created_at: e.created_at,
+          updated_at: e.updated_at,
+        })),
+      ];
+
+      if (combinedWorkouts.length === 0) {
+        console.log('No workout data found for user:', user.id);
         setWeeklyData({
           labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
           datasets: [{data: [0, 0, 0, 0, 0, 0, 0]}],
@@ -199,14 +228,11 @@ const ProgressScreen = () => {
         return;
       }
 
-      // 3. Process the data
-      const processedData = processWorkoutData(workouts);
-      console.log('Processed weekly data:', processedData);
+      // Process the combined data
+      const processedData = processWorkoutData(combinedWorkouts);
+      const monthlyStats = calculateMonthlyStats(combinedWorkouts);
 
-      const monthlyStats = calculateMonthlyStats(workouts);
-      console.log('Monthly stats:', monthlyStats);
-
-      // 4. Update state
+      // Update state
       setWeeklyData(processedData);
       setMonthlyProgress(monthlyStats);
     } catch (e) {
@@ -524,14 +550,10 @@ const calculateMonthlyStats = (workouts: WorkoutData[]) => {
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
-  console.log('Calculating monthly stats from:', monthStart); // Debug log
-
   const monthWorkouts = workouts.filter(workout => {
     const workoutDate = new Date(workout.date);
     return workoutDate >= monthStart;
   });
-
-  console.log('Workouts this month:', monthWorkouts); // Debug log
 
   return {
     workouts: monthWorkouts.length,
@@ -611,6 +633,36 @@ const addWorkout = async (workoutData: {
 
   console.log('Workout added:', {data, error});
   return {data, error};
+};
+
+// Add this helper function to estimate calories based on duration and exercise type
+const calculateEstimatedCalories = (
+  durationMinutes: number,
+  exerciseType: string,
+): number => {
+  // These are rough estimates and should be adjusted based on your needs
+  const MET = {
+    walking: 3.5,
+    running: 8,
+    cycling: 7.5,
+    swimming: 6,
+    weightlifting: 3.5,
+    yoga: 2.5,
+    hiit: 8,
+    default: 4, // default MET value for unknown exercises
+  };
+
+  // Average weight in kg (you might want to make this user-specific)
+  const averageWeight = 70;
+
+  // Calculate calories using the MET formula
+  // Calories = MET × Weight (kg) × Duration (hours)
+  const exerciseTypeKey =
+    exerciseType?.toLowerCase().replace(/\s+/g, '') || 'default';
+  const met = MET[exerciseTypeKey] || MET.default;
+  const hours = durationMinutes / 60;
+
+  return Math.round(met * averageWeight * hours);
 };
 
 export default ProgressScreen;

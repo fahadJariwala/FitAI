@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -12,23 +12,24 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useTheme } from '../context/ThemeContext';
-import { typography } from '../styles/typeograpghy';
-import { useAuth } from '../context/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import {useTheme} from '../context/ThemeContext';
+import {typography} from '../styles/typeograpghy';
+import {useAuth} from '../context/AuthContext';
+import {useNavigation} from '@react-navigation/native';
+import {useAlert} from '../context/AlertContext';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 const LoginScreen = () => {
-  const navigation = useNavigation()
-  const { theme } = useTheme();
-  const { signIn, signUp } = useAuth();
-
+  const navigation = useNavigation();
+  const {theme} = useTheme();
+  const {signIn, signUp} = useAuth();
+  const {showAlert} = useAlert();
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.background
+      backgroundColor: theme.colors.background,
     },
     scrollContent: {
       flexGrow: 1,
@@ -97,7 +98,7 @@ const LoginScreen = () => {
       alignItems: 'center',
       marginTop: 20,
       shadowColor: theme.colors.buttonPrimary,
-      shadowOffset: { width: 0, height: 4 },
+      shadowOffset: {width: 0, height: 4},
       shadowOpacity: 0.3,
       shadowRadius: 4.65,
       elevation: 8,
@@ -109,7 +110,7 @@ const LoginScreen = () => {
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: 20,
-      shadowOffset: { width: 0, height: 4 },
+      shadowOffset: {width: 0, height: 4},
       shadowOpacity: 0.3,
       shadowRadius: 4.65,
       elevation: 8,
@@ -165,7 +166,7 @@ const LoginScreen = () => {
 
   const validateForm = () => {
     let isValid = true;
-    const newErrors = { email: '', password: '' };
+    const newErrors = {email: '', password: ''};
 
     // Email validation
     if (!email.trim()) {
@@ -193,7 +194,7 @@ const LoginScreen = () => {
     if (validateForm()) {
       try {
         setLoading(true);
-        const { error } = await signIn(email, password);
+        const {error} = await signIn(email, password);
 
         if (error) {
           throw error;
@@ -202,9 +203,8 @@ const LoginScreen = () => {
         // Reset navigation stack and navigate to MainApp
         navigation.reset({
           index: 0,
-          routes: [{ name: 'MainApp' }],
+          routes: [{name: 'MainApp'}],
         });
-
       } catch (error: any) {
         showAlert({
           type: 'error',
@@ -214,7 +214,7 @@ const LoginScreen = () => {
             {
               text: 'OK',
               style: 'default',
-              onPress: () => { },
+              onPress: () => {},
             },
           ],
         });
@@ -224,15 +224,25 @@ const LoginScreen = () => {
     }
   };
 
-
   const handleSignUp = async () => {
     if (validateForm()) {
       try {
         setCreating(true);
         await signUp(email, password);
-
       } catch (error) {
-        Alert.alert('Error', error.message);
+        // Alert.alert('Error', error.message);
+        showAlert({
+          type: 'error',
+          title: 'Error',
+          message: error.message,
+          buttons: [
+            {
+              text: 'OK',
+              style: 'default',
+              onPress: () => {},
+            },
+          ],
+        });
       } finally {
         setCreating(false);
         navigation.replace('UserDetails');
@@ -244,28 +254,34 @@ const LoginScreen = () => {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
-    >
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={styles.headerContainer}>
           <Text style={styles.title}>Welcome to FitAI!</Text>
-          <Text style={styles.subtitle}>Sign in to continue your fitness journey</Text>
+          <Text style={styles.subtitle}>
+            Sign in to continue your fitness journey
+          </Text>
         </View>
 
         <View style={styles.formContainer}>
           <View style={styles.inputContainer}>
-            <Icon name="email-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
+            <Icon
+              name="email-outline"
+              size={20}
+              color={theme.colors.textSecondary}
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholderTextColor={theme.colors.textSecondary}
               placeholder="Email"
               value={email}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setEmail(text);
                 if (errors.email) {
-                  setErrors(prev => ({ ...prev, email: '' }));
+                  setErrors(prev => ({...prev, email: ''}));
                 }
               }}
               keyboardType="email-address"
@@ -273,49 +289,57 @@ const LoginScreen = () => {
               autoCorrect={false}
             />
           </View>
-          {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+          {errors.email ? (
+            <Text style={styles.errorText}>{errors.email}</Text>
+          ) : null}
 
           <View style={styles.inputContainer}>
-            <Icon name="lock-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
+            <Icon
+              name="lock-outline"
+              size={20}
+              color={theme.colors.textSecondary}
+              style={styles.inputIcon}
+            />
             <TextInput
-              style={[styles.input, { flex: 1 }]}
+              style={[styles.input, {flex: 1}]}
               placeholderTextColor={theme.colors.textSecondary}
               placeholder="Password"
               value={password}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setPassword(text);
                 if (errors.password) {
-                  setErrors(prev => ({ ...prev, password: '' }));
+                  setErrors(prev => ({...prev, password: ''}));
                 }
               }}
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
-            >
+              style={styles.eyeIcon}>
               <Icon
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 size={20}
                 color={theme.colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
-          {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
-
-
+          {errors.password ? (
+            <Text style={styles.errorText}>{errors.password}</Text>
+          ) : null}
 
           <TouchableOpacity
             style={styles.loginButton}
             onPress={handleLogin}
             disabled={loading}>
-            <Text style={styles.loginButtonText}>   {loading ? 'Loading...' : 'Login'}</Text>
+            <Text style={styles.loginButtonText}>
+              {' '}
+              {loading ? 'Loading...' : 'Login'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.loginLink}
-            onPress={() => navigation.navigate('SignupScreen')}
-          >
+            onPress={() => navigation.navigate('SignupScreen')}>
             <Text style={styles.loginLinkText}>
               Don't have an account?{' '}
               <Text style={styles.loginText}>Sign UP</Text>
@@ -323,10 +347,8 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView >
+    </KeyboardAvoidingView>
   );
 };
-
-
 
 export default LoginScreen;

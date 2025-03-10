@@ -13,11 +13,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import {useAuth} from '../context/AuthContext';
 import {supabase} from '../lib/supabase';
+import {useAlert} from '../context/AlertContext';
 
 const ProfileScreen = () => {
   const {theme, themeType, setThemeType} = useTheme();
   const navigation = useNavigation();
   const {signOut, user} = useAuth();
+  const {showAlert} = useAlert();
+
   const [profile, setProfile] = useState({
     full_name: '',
     email: '',
@@ -58,7 +61,20 @@ const ProfileScreen = () => {
       }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
-      Alert.alert('Error', 'Failed to load profile data');
+      // Alert.alert('Error', 'Failed to load profile data');
+
+      showAlert({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load profile data',
+        buttons: [
+          {
+            text: 'OK',
+            style: 'default',
+            onPress: () => {},
+          },
+        ],
+      });
     }
   };
 
@@ -164,7 +180,18 @@ const ProfileScreen = () => {
       navigation.replace('LoginScreen');
     } catch (error) {
       console.error('Error during logout:', error);
-      Alert.alert('Error', 'Failed to logout. Please try again.');
+      showAlert({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to logout. Please try again.',
+        buttons: [
+          {
+            text: 'OK',
+            style: 'default',
+            onPress: () => {},
+          },
+        ],
+      });
     }
   };
 
@@ -180,17 +207,14 @@ const ProfileScreen = () => {
             </Text>
           </View>
           <Text style={styles.name}>{profile.full_name || 'User'}</Text>
-          <Text style={styles.email}>
-            {profile.email || user?.email || 'No email'}
-          </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
           <View style={[styles.row, styles.rowLast]}>
-            <Text style={styles.rowLabel}>Name</Text>
+            <Text style={styles.rowLabel}>E-mail</Text>
             <Text style={styles.rowValue}>
-              {profile.full_name ? `${profile.height} cm` : 'N/A'}
+              {profile.email || user?.email || 'No email'}
             </Text>
           </View>
           <View style={styles.row}>
