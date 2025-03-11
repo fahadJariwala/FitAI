@@ -16,7 +16,7 @@ import {supabase} from '../lib/supabase';
 import axios from 'axios';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import LinearGradient from 'react-native-linear-gradient';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
 const HomeScreen = () => {
   const {theme} = useTheme();
@@ -29,6 +29,7 @@ const HomeScreen = () => {
   const [selectedBodyPart, setSelectedBodyPart] = useState('chest');
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState({});
   const shimmerValue = new Animated.Value(0);
 
   const bodyParts = [
@@ -69,78 +70,9 @@ const HomeScreen = () => {
     }
   }, [loading]);
 
-  useEffect(() => {
-    fetchWorkoutData();
-  }, []);
-
-  const fetchUserStats = async () => {
-    try {
-      const {
-        data: {user},
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Fetch from both tables
-      const [workoutsResponse, exerciseTrackingResponse] = await Promise.all([
-        supabase.from('workouts').select('*').eq('user_id', user.id),
-        supabase.from('exercise_tracking').select('*').eq('user_id', user.id),
-      ]);
-
-      if (workoutsResponse.error) {
-        console.error('Workouts fetch error:', workoutsResponse.error);
-        return;
-      }
-
-      if (exerciseTrackingResponse.error) {
-        console.error(
-          'Exercise tracking fetch error:',
-          exerciseTrackingResponse.error,
-        );
-        return;
-      }
-
-      // Calculate totals from both workouts and exercise tracking
-      const workouts = workoutsResponse.data || [];
-      const exerciseTracking = exerciseTrackingResponse.data || [];
-
-      console.log('Workouts:', workouts); // Debug log
-      console.log('Exercise Tracking:', exerciseTracking); // Debug log
-
-      const workoutCalories = workouts.reduce((sum, workout) => {
-        const calories = Number(workout.calories) || 0;
-        return sum + calories;
-      }, 0);
-
-      const workoutMinutes = workouts.reduce((sum, workout) => {
-        const duration = Number(workout.duration) || 0;
-        return sum + duration;
-      }, 0);
-
-      const exerciseCalories = exerciseTracking.reduce((sum, exercise) => {
-        const calories = Number(exercise.calories) || 0;
-        return sum + calories;
-      }, 0);
-
-      const exerciseMinutes = exerciseTracking.reduce((sum, exercise) => {
-        const duration = Number(exercise.duration) || 0;
-        return sum + duration;
-      }, 0);
-
-      const totalCalories = workoutCalories + exerciseCalories;
-      const totalMinutes = workoutMinutes + exerciseMinutes;
-
-      console.log('Total Calories:', totalCalories); // Debug log
-      console.log('Total Minutes:', totalMinutes); // Debug log
-
-      setStats({
-        calories: totalCalories,
-        duration: totalMinutes,
-        workouts: workouts.length + exerciseTracking.length,
-      });
-    } catch (error) {
-      console.error('Error fetching user stats:', error);
-    }
-  };
+  // useEffect(() => {
+  //   fetchWorkoutData();
+  // }, []);
 
   const calculateMonthlyStats = (workouts: WorkoutData[]) => {
     const monthStart = new Date();
@@ -397,6 +329,56 @@ const HomeScreen = () => {
     },
   });
 
+  const fetchProfile = async () => {
+    try {
+      const {
+        data: {user: currentUser},
+      } = await supabase.auth.getUser();
+
+      if (!currentUser) {
+        console.log('No user found');
+        return;
+      }
+
+      const {data, error} = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error.message);
+        return;
+      }
+
+      if (data) {
+        console.log('Profile data:', data);
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
+      // Alert.alert('Error', 'Failed to load profile data');
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const initializeData = async () => {
+        fetchProfile();
+        await fetchWorkoutData();
+      };
+
+      initializeData();
+
+      // Optional: Return a cleanup function if needed
+      return () => {
+        // Any cleanup code if necessary
+      };
+    }, []), // Empty dependency array since we want this to run on every focus
+  );
+
+  console.log('profile====', profile);
+
   const renderBodyPart = ({item}) => (
     <TouchableOpacity
       onPress={() => setSelectedBodyPart(item)}
@@ -466,12 +448,14 @@ const HomeScreen = () => {
       <Text style={styles.exerciseTarget}>Target: {item.target}</Text>
     </TouchableOpacity>
   );
-
+  const screenTitle = profile?.full_name
+    ? `Welcome back, ${profile?.full_name?.split(' ')[0]}!`
+    : 'Welcome back!';
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeText}>Welcome back!</Text>
+          <Text style={styles.welcomeText}>{screenTitle}</Text>
           <Text style={{color: theme.colors.text}}>
             Ready for today's workout?
           </Text>
@@ -493,7 +477,9 @@ const HomeScreen = () => {
         </View>
 
         <View style={styles.listContainer}>
-          <Text style={[styles.welcomeText, {fontSize: 20}]}>Body Parts</Text>
+          <Text style={[styles.welcomeText, {fontSize: 20}]}>
+            What’s Your Fitness Goal Today?
+          </Text>
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}

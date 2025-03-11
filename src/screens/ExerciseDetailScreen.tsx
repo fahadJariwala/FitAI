@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useCurrentUser} from '../hooks/useCurrentUser';
 import {supabase} from '../lib/supabase';
 import {useAlert} from '../context/AlertContext';
+import FastImage from 'react-native-fast-image';
 
 const {width} = Dimensions.get('window');
 
@@ -281,7 +282,7 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Image
+        <FastImage
           source={{uri: exercise.gifUrl}}
           style={styles.gifContainer}
           resizeMode="contain"
@@ -324,7 +325,12 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
         <View style={styles.timerContainer}>
           <Text style={styles.timerText}>{formatTime(timer)}</Text>
           <View style={styles.timerControls}>
-            <TouchableOpacity style={styles.timerButton} onPress={toggleTimer}>
+            <TouchableOpacity
+              style={styles.timerButton}
+              onLongPress={() => {
+                setTimer(timer => timer + 300);
+              }}
+              onPress={toggleTimer}>
               <Text style={styles.timerButtonText}>
                 {isActive ? 'Pause' : 'Start'}
               </Text>
