@@ -1,4 +1,5 @@
 import React, {useState, useEffect} from 'react';
+import {FloatingChatButton} from '../components/FloatingChatButton';
 import {
   View,
   ScrollView,
@@ -14,28 +15,110 @@ import {Text} from 'react-native';
 import {useTheme} from '../context/ThemeContext';
 import {supabase} from '../lib/supabase';
 import axios from 'axios';
-import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
+
 import LinearGradient from 'react-native-linear-gradient';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
+// Helper function to estimate calories based on duration and exercise type
+const calculateEstimatedCalories = (
+  durationMinutes: number,
+  exerciseType: string,
+): number => {
+  const MET = {
+    walking: 3.5,
+    running: 8,
+    cycling: 7.5,
+    swimming: 6,
+    weightlifting: 3.5,
+    yoga: 2.5,
+    hiit: 8,
+    default: 4,
+  } as const;
+
+  const averageWeight = 70;
+  const exerciseTypeKey =
+    exerciseType?.toLowerCase().replace(/\s+/g, '') || 'default';
+  const met = MET[exerciseTypeKey as keyof typeof MET] || MET.default;
+  const hours = durationMinutes / 60;
+
+  return Math.round(met * averageWeight * hours);
+};
+
+type WorkoutData = {
+  id: string;
+  user_id: string;
+  date: string;
+  calories: number;
+  duration: number;
+  workout_type: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+interface Exercise {
+  id: string;
+  name: string;
+  target: string;
+  bodyPart: string;
+  equipment: string;
+  gifUrl: string;
+  instructions?: string[];
+}
+
+type Profile = {
+  full_name?: string;
+};
+
+const LoadingPlaceholder = ({theme}: {theme: any}) => {
+  return (
+    <View style={{padding: theme.spacing.m}}>
+      <View
+        style={{
+          height: 100,
+          backgroundColor: theme.colors.card,
+          marginVertical: theme.spacing.s,
+          borderRadius: theme.borderRadii.m,
+        }}
+      />
+      <View
+        style={{
+          height: 100,
+          backgroundColor: theme.colors.card,
+          marginVertical: theme.spacing.s,
+          borderRadius: theme.borderRadii.m,
+        }}
+      />
+      <View
+        style={{
+          height: 100,
+          backgroundColor: theme.colors.card,
+          marginVertical: theme.spacing.s,
+          borderRadius: theme.borderRadii.m,
+        }}
+      />
+    </View>
+  );
+};
+
 const HomeScreen = () => {
   const {theme} = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [stats, setStats] = useState({
     calories: 0,
     duration: 0,
     workouts: 0,
   });
   const [selectedBodyPart, setSelectedBodyPart] = useState('chest');
-  const [exercises, setExercises] = useState([]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState({});
+  const [profile, setProfile] = useState<Profile>({});
   const shimmerValue = new Animated.Value(0);
 
   const bodyParts = [
+    'chest',
     'back',
     'cardio',
-    'chest',
     'lower arms',
     'lower legs',
     'neck',
@@ -176,7 +259,7 @@ const HomeScreen = () => {
     }
   };
 
-  const fetchExercises = async bodyPart => {
+  const fetchExercises = async (bodyPart: string) => {
     setLoading(true);
     try {
       const response = await axios.get(
@@ -198,6 +281,10 @@ const HomeScreen = () => {
   };
 
   const styles = StyleSheet.create({
+    scrollView: {
+      flex: 1,
+    },
+
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
@@ -379,7 +466,7 @@ const HomeScreen = () => {
 
   console.log('profile====', profile);
 
-  const renderBodyPart = ({item}) => (
+  const renderBodyPart = ({item}: {item: string}) => (
     <TouchableOpacity
       onPress={() => setSelectedBodyPart(item)}
       style={[
@@ -421,7 +508,7 @@ const HomeScreen = () => {
     />
   );
 
-  const handleExercisePress = exercise => {
+  const handleExercisePress = (exercise: Exercise) => {
     navigation.navigate('ExerciseDetail', {
       exercise: {
         ...exercise,
@@ -434,7 +521,7 @@ const HomeScreen = () => {
     });
   };
 
-  const renderExercise = ({item}) => (
+  const renderExercise = ({item}: {item: Exercise}) => (
     <TouchableOpacity
       style={styles.exerciseCard}
       onPress={() => handleExercisePress(item)}
@@ -452,91 +539,65 @@ const HomeScreen = () => {
     ? `Welcome back, ${profile?.full_name?.split(' ')[0]}!`
     : 'Welcome back!';
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeText}>{screenTitle}</Text>
-          <Text style={{color: theme.colors.text}}>
-            Ready for today's workout?
-          </Text>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.calories}</Text>
-            <Text style={styles.statLabel}>Calories</Text>
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.content}>
+          <View style={styles.welcomeCard}>
+            <Text style={styles.welcomeText}>{screenTitle}</Text>
+            <Text style={{color: theme.colors.text}}>
+              Ready for today's workout?
+            </Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.duration}</Text>
-            <Text style={styles.statLabel}>Minutes</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.workouts}</Text>
-            <Text style={styles.statLabel}>Workouts</Text>
-          </View>
-        </View>
 
-        <View style={styles.listContainer}>
-          <Text style={[styles.welcomeText, {fontSize: 20}]}>
-            What’s Your Fitness Goal Today?
-          </Text>
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={bodyParts}
-            renderItem={renderBodyPart}
-            keyExtractor={item => item}
-            style={{marginVertical: theme.spacing.s}}
-          />
-        </View>
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{stats.calories}</Text>
+              <Text style={styles.statLabel}>Calories</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{stats.duration}</Text>
+              <Text style={styles.statLabel}>Minutes</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{stats.workouts}</Text>
+              <Text style={styles.statLabel}>Workouts</Text>
+            </View>
+          </View>
 
-        <View style={styles.listContainer}>
-          <Text style={[styles.welcomeText, {fontSize: 20}]}>Exercises</Text>
-          {loading ? (
-            renderLoadingList()
-          ) : (
+          <View style={styles.listContainer}>
+            <Text style={[styles.welcomeText, {fontSize: 20}]}>
+              What’s Your Fitness Goal Today?
+            </Text>
             <FlatList
               horizontal
               showsHorizontalScrollIndicator={false}
-              data={exercises}
-              renderItem={renderExercise}
-              keyExtractor={item => item.id}
+              data={bodyParts}
+              renderItem={renderBodyPart}
+              keyExtractor={item => item}
               style={{marginVertical: theme.spacing.s}}
             />
-          )}
+          </View>
+
+          <View style={styles.listContainer}>
+            <Text style={[styles.welcomeText, {fontSize: 20}]}>Exercises</Text>
+            {loading ? (
+              renderLoadingList()
+            ) : (
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={exercises}
+                renderItem={renderExercise}
+                keyExtractor={item => item.id}
+                style={{marginVertical: theme.spacing.s}}
+              />
+            )}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+      <FloatingChatButton />
+    </View>
   );
-};
-// Add this helper function to estimate calories based on duration and exercise type
-const calculateEstimatedCalories = (
-  durationMinutes: number,
-  exerciseType: string,
-): number => {
-  // These are rough estimates and should be adjusted based on your needs
-  const MET = {
-    walking: 3.5,
-    running: 8,
-    cycling: 7.5,
-    swimming: 6,
-    weightlifting: 3.5,
-    yoga: 2.5,
-    hiit: 8,
-    default: 4, // default MET value for unknown exercises
-  };
-
-  // Average weight in kg (you might want to make this user-specific)
-  const averageWeight = 70;
-
-  // Calculate calories using the MET formula
-  // Calories = MET × Weight (kg) × Duration (hours)
-  const exerciseTypeKey =
-    exerciseType?.toLowerCase().replace(/\s+/g, '') || 'default';
-  const met = MET[exerciseTypeKey] || MET.default;
-  const hours = durationMinutes / 60;
-
-  return Math.round(met * averageWeight * hours);
 };
 
 export default HomeScreen;
