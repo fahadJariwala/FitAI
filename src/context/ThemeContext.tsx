@@ -1,5 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Appearance, useColorScheme, AppState, AppStateStatus } from 'react-native';
+import React, {createContext, useContext, useEffect, useState} from 'react';
+import {
+  Appearance,
+  useColorScheme,
+  AppState,
+  AppStateStatus,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ThemeType = 'light' | 'dark' | 'system';
@@ -35,27 +40,28 @@ interface ThemeColors {
     success: string;
     warning: string;
     info: string;
-  }
+  };
   spacing: {
     xs: number;
     s: number;
     m: number;
     l: number;
     xl: number;
-  },
+    xxl: number;
+  };
   borderRadii: {
     xs: number;
     s: number;
     m: number;
     l: number;
     xl: number;
-  },
+  };
   textVariants: {
     header: {
       fontSize: number;
       fontWeight: string;
     };
-  }
+  };
 }
 
 export const lightTheme: ThemeColors = {
@@ -198,11 +204,14 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider = ({ children }) => {
+export const ThemeProvider = ({children}) => {
   const systemColorScheme = useColorScheme();
   const [themeType, setThemeType] = useState<ThemeType>('system');
 
-  const handleThemeChange = (currentThemeType: ThemeType, systemScheme: string | null) => {
+  const handleThemeChange = (
+    currentThemeType: ThemeType,
+    systemScheme: string | null,
+  ) => {
     if (currentThemeType === 'system') {
       return systemScheme === 'dark' ? darkTheme : lightTheme;
     }
@@ -210,20 +219,23 @@ export const ThemeProvider = ({ children }) => {
   };
 
   const [theme, setTheme] = useState(() =>
-    handleThemeChange(themeType, systemColorScheme)
+    handleThemeChange(themeType, systemColorScheme),
   );
 
   // Fixed AppState listener
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active' && themeType === 'system') {
-        const currentSystemTheme = Appearance.getColorScheme();
-        setTheme(handleThemeChange(themeType, currentSystemTheme));
-      }
-    });
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextAppState: AppStateStatus) => {
+        if (nextAppState === 'active' && themeType === 'system') {
+          const currentSystemTheme = Appearance.getColorScheme();
+          setTheme(handleThemeChange(themeType, currentSystemTheme));
+        }
+      },
+    );
 
     // Also listen for system theme changes
-    const themeSubscription = Appearance.addChangeListener(({ colorScheme }) => {
+    const themeSubscription = Appearance.addChangeListener(({colorScheme}) => {
       if (themeType === 'system') {
         setTheme(handleThemeChange(themeType, colorScheme));
       }
@@ -251,7 +263,7 @@ export const ThemeProvider = ({ children }) => {
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, themeType, setThemeType }}>
+    <ThemeContext.Provider value={{theme, themeType, setThemeType}}>
       {children}
     </ThemeContext.Provider>
   );
