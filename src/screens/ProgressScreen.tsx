@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -9,11 +9,11 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import {useTheme} from '../context/ThemeContext';
-import {Text} from 'react-native';
-import {LineChart} from 'react-native-chart-kit';
-import {supabase} from '../lib/supabase';
-import {useFocusEffect} from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
+import { Text } from 'react-native';
+import { LineChart } from 'react-native-chart-kit';
+import { supabase } from '../lib/supabase';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface WorkoutData {
   id: string;
@@ -27,7 +27,7 @@ interface WorkoutData {
   updated_at: string;
 }
 
-const SkeletonLoader = ({theme, width, height, style}) => {
+const SkeletonLoader = ({ theme, width, height, style }) => {
   const animatedValue = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -69,13 +69,13 @@ const SkeletonLoader = ({theme, width, height, style}) => {
 };
 
 const ProgressScreen = () => {
-  const {theme} = useTheme();
+  const { theme } = useTheme();
   const screenWidth = Dimensions.get('window').width;
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [weeklyData, setWeeklyData] = useState({
     labels: [],
-    datasets: [{data: []}],
+    datasets: [{ data: [] }],
   });
   const [monthlyProgress, setMonthlyProgress] = useState({
     workouts: 0,
@@ -91,7 +91,7 @@ const ProgressScreen = () => {
 
       // Check authentication first
       const {
-        data: {user},
+        data: { user },
         error: authError,
       } = await supabase.auth.getUser();
 
@@ -107,7 +107,7 @@ const ProgressScreen = () => {
       }
 
       // Test query to check table access
-      const {data, error: queryError} = await supabase
+      const { data, error: queryError } = await supabase
         .from('workouts')
         .select('id')
         .limit(1);
@@ -157,7 +157,7 @@ const ProgressScreen = () => {
       setError(null);
 
       const {
-        data: {user},
+        data: { user },
       } = await supabase.auth.getUser();
 
       if (!user) {
@@ -205,9 +205,8 @@ const ProgressScreen = () => {
           ), // Helper function to estimate calories
           duration: e.duration_minutes || 0,
           workout_type: e.exercise_name,
-          notes: `${e.target_muscle || ''} ${e.equipment_used || ''} ${
-            e.body_part || ''
-          }`.trim(),
+          notes: `${e.target_muscle || ''} ${e.equipment_used || ''} ${e.body_part || ''
+            }`.trim(),
           created_at: e.created_at,
           updated_at: e.updated_at,
         })),
@@ -217,7 +216,7 @@ const ProgressScreen = () => {
         console.log('No workout data found for user:', user.id);
         setWeeklyData({
           labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-          datasets: [{data: [0, 0, 0, 0, 0, 0, 0]}],
+          datasets: [{ data: [0, 0, 0, 0, 0, 0, 0] }],
         });
         setMonthlyProgress({
           workouts: 0,
@@ -271,7 +270,7 @@ const ProgressScreen = () => {
       marginBottom: theme.spacing.m,
       elevation: 2,
       shadowColor: theme.colors.shadow,
-      shadowOffset: {width: 0, height: 2},
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
     },
@@ -293,7 +292,7 @@ const ProgressScreen = () => {
       marginBottom: theme.spacing.xl,
       elevation: 2,
       shadowColor: theme.colors.shadow,
-      shadowOffset: {width: 0, height: 2},
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
     },
@@ -391,7 +390,7 @@ const ProgressScreen = () => {
                   theme={theme}
                   width={80}
                   height={30}
-                  style={{marginBottom: 8}}
+                  style={{ marginBottom: 8 }}
                 />
                 <SkeletonLoader theme={theme} width={60} height={20} />
               </View>
@@ -467,6 +466,7 @@ const ProgressScreen = () => {
           </View>
         </View>
 
+        {console.log("weeklyData====", weeklyData)}
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Weekly Activity</Text>
           {weeklyData.datasets[0].data.length > 0 ? (
@@ -508,14 +508,23 @@ const ProgressScreen = () => {
 };
 
 const processWorkoutData = (workouts: WorkoutData[]) => {
-  console.log('Processing workouts:', workouts); // Debug log
+  console.log('Processing workouts:', workouts);
 
-  const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // Get current date and current day index (0 = Sunday, 6 = Saturday)
+  const today = new Date();
+  const currentDayIndex = today.getDay();
+  today.setHours(0, 0, 0, 0);
+
+  // Create labels array starting from 6 days ago up to today
+  const labels = [];
   const data = new Array(7).fill(0);
 
-  // Get current date
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const dayIndex = date.getDay();
+    labels[6 - i] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayIndex];
+  }
 
   workouts.forEach(workout => {
     const workoutDate = new Date(workout.date);
@@ -525,14 +534,15 @@ const processWorkoutData = (workouts: WorkoutData[]) => {
     const diffTime = today.getTime() - workoutDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    console.log('Workout date:', workoutDate, 'Days ago:', diffDays); // Debug log
+    console.log('Workout date:', workoutDate, 'Days ago:', diffDays);
 
+    // Only include data from the last 7 days
     if (diffDays >= 0 && diffDays < 7) {
       data[6 - diffDays] += workout.calories;
     }
   });
 
-  console.log('Processed data:', {labels, data}); // Debug log
+  console.log('Processed data:', { labels, data });
 
   return {
     labels,
@@ -618,12 +628,12 @@ const addWorkout = async (workoutData: {
   notes?: string;
 }) => {
   const {
-    data: {user},
+    data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) return;
 
-  const {data, error} = await supabase.from('workouts').insert([
+  const { data, error } = await supabase.from('workouts').insert([
     {
       user_id: user.id,
       date: new Date().toISOString(),
@@ -631,8 +641,8 @@ const addWorkout = async (workoutData: {
     },
   ]);
 
-  console.log('Workout added:', {data, error});
-  return {data, error};
+  console.log('Workout added:', { data, error });
+  return { data, error };
 };
 
 // Add this helper function to estimate calories based on duration and exercise type

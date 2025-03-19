@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   TouchableOpacity,
   Modal,
@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 const Icon = MaterialCommunityIcons as any;
-import {ChatBotScreen} from '../screens/ChatBotScreen';
-import {useTheme} from '../context/ThemeContext';
+import { ChatBotScreen } from '../screens/ChatBotScreen';
+import { useTheme } from '../context/ThemeContext';
 
-const {height} = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   button: {
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
 });
 
 export const FloatingChatButton = () => {
-  const {theme} = useTheme();
+  const { theme } = useTheme();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [animation] = useState(new Animated.Value(0));
 
@@ -71,7 +71,7 @@ export const FloatingChatButton = () => {
             backgroundColor: theme.colors.primary,
             elevation: 5,
             shadowColor: theme.colors.primary,
-            shadowOffset: {width: 0, height: 2},
+            shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.25,
             shadowRadius: 3.84,
             borderWidth: 1,
@@ -91,7 +91,7 @@ export const FloatingChatButton = () => {
           <Animated.View
             style={[
               styles.modalOverlay,
-              {backgroundColor: 'rgba(0, 0, 0, 0.7)'},
+              { backgroundColor: 'rgba(0, 0, 0, 0.7)' },
             ]}>
             <TouchableWithoutFeedback>
               <Animated.View
@@ -99,7 +99,7 @@ export const FloatingChatButton = () => {
                   styles.modalContent,
                   {
                     backgroundColor: theme.colors.background,
-                    transform: [{translateY: modalTranslateY}],
+                    transform: [{ translateY: modalTranslateY }],
                     borderTopLeftRadius: theme.borderRadii.l,
                     borderTopRightRadius: theme.borderRadii.l,
                   },

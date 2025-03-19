@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { typography } from '../styles/typeograpghy';
 
 const { width } = Dimensions.get('window');
 
@@ -93,18 +94,20 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
             marginBottom: 16,
         },
         title: {
-            fontSize: 18,
+            // fontSize: 18,
             fontWeight: '600',
             color: theme.colors.text,
             textAlign: 'center',
             marginBottom: 8,
+            ...typography.h3
         },
         message: {
-            fontSize: 14,
+            // fontSize: 14,
             color: theme.colors.textSecondary,
             textAlign: 'center',
             marginBottom: 20,
-            lineHeight: 20,
+            // lineHeight: 20,
+            ...typography.bodyMedium
         },
         buttonContainer: {
             flexDirection: buttons.length > 2 ? 'column' : 'row',
@@ -122,19 +125,27 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
         buttonText: {
             fontSize: 16,
             fontWeight: '600',
+            ...typography.button
+
         },
         buttonSeparator: {
             width: 1,
             backgroundColor: theme.colors.border,
         },
         defaultButtonText: {
-            color: theme.colors.primary,
+            color: theme.colors.textSecondary,
+            ...typography.button
+
         },
         cancelButtonText: {
             color: theme.colors.textSecondary,
+            ...typography.button
+
         },
         destructiveButtonText: {
             color: theme.colors.error,
+            ...typography.button
+
         },
     });
 

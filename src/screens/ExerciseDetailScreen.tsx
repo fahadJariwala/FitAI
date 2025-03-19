@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -8,15 +8,16 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import {useTheme} from '../context/ThemeContext';
-import {Text} from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { Text } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useCurrentUser} from '../hooks/useCurrentUser';
-import {supabase} from '../lib/supabase';
-import {useAlert} from '../context/AlertContext';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { supabase } from '../lib/supabase';
+import { useAlert } from '../context/AlertContext';
 import FastImage from 'react-native-fast-image';
+import { typography } from '../styles/typeograpghy';
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface ExerciseDetailProps {
   route: {
@@ -39,14 +40,14 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
   route,
   navigation,
 }) => {
-  const {theme} = useTheme();
-  const {showAlert} = useAlert();
+  const { theme } = useTheme();
+  const { showAlert } = useAlert();
 
-  const {exercise} = route.params;
+  const { exercise } = route.params;
   const [timer, setTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(false);
-  const {user} = useCurrentUser();
+  const { user } = useCurrentUser();
 
   // Timer logic
   useEffect(() => {
@@ -115,6 +116,7 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
       fontWeight: 'bold',
       color: theme.colors.text,
       marginBottom: theme.spacing.m,
+      ...typography.h3
     },
     infoCard: {
       backgroundColor: theme.colors.card,
@@ -129,24 +131,28 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
     },
     infoLabel: {
       color: theme.colors.text,
-      opacity: 0.7,
+      opacity: 0.5,
       width: 100,
+      ...typography.bodyMedium
     },
     infoValue: {
       color: theme.colors.text,
       flex: 1,
       fontWeight: '500',
+      ...typography.bodyMedium
     },
     sectionTitle: {
-      fontSize: 18,
+      // fontSize: 18,
       fontWeight: '600',
       color: theme.colors.text,
       marginBottom: theme.spacing.s,
+      ...typography.bodyLarge
     },
     instruction: {
       color: theme.colors.text,
       marginBottom: theme.spacing.s,
-      lineHeight: 20,
+      // lineHeight: 20,
+      ...typography.bodyMedium
     },
     trackButton: {
       backgroundColor: theme.colors.primary,
@@ -158,7 +164,8 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
     trackButtonText: {
       color: '#FFFFFF',
       fontWeight: '600',
-      fontSize: 16,
+      // fontSize: 16,
+      ...typography.button
     },
     timerContainer: {
       alignItems: 'center',
@@ -168,10 +175,11 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
       borderRadius: theme.borderRadii.m,
     },
     timerText: {
-      fontSize: 48,
       fontWeight: 'bold',
       color: theme.colors.text,
       marginBottom: theme.spacing.m,
+      ...typography.h1,
+      fontSize: 36,
     },
     timerControls: {
       flexDirection: 'row',
@@ -186,8 +194,9 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
     },
     timerButtonText: {
       color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '600',
+      // fontWeight: '600',
+      ...typography.button,
+      fontSize: 14
     },
   });
 
@@ -201,7 +210,7 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
           {
             text: 'OK',
             style: 'default',
-            onPress: () => {},
+            onPress: () => { },
           },
         ],
       });
@@ -217,7 +226,7 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
           {
             text: 'OK',
             style: 'default',
-            onPress: () => {},
+            onPress: () => { },
           },
         ],
       });
@@ -240,7 +249,7 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
 
       console.log('Sending data:', exerciseData); // Debug log
 
-      const {data, error} = await supabase
+      const { data, error } = await supabase
         .from('exercise_tracking')
         .insert(exerciseData)
         .select();
@@ -269,7 +278,7 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
           {
             text: 'OK',
             style: 'default',
-            onPress: () => {},
+            onPress: () => { },
           },
         ],
       });
@@ -283,7 +292,7 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <FastImage
-          source={{uri: exercise.gifUrl}}
+          source={{ uri: exercise.gifUrl }}
           style={styles.gifContainer}
           resizeMode="contain"
           isAnimated={true}
@@ -297,7 +306,7 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={{paddingBottom: 50}}>
+        contentContainerStyle={{ paddingBottom: 50 }}>
         <Text style={styles.title}>{exercise.name}</Text>
 
         <View style={styles.infoCard}>
@@ -342,7 +351,7 @@ const ExerciseDetailScreen: React.FC<ExerciseDetailProps> = ({
         </View>
 
         <TouchableOpacity
-          style={[styles.trackButton, loading && {opacity: 0.7}]}
+          style={[styles.trackButton, loading && { opacity: 0.7 }]}
           onPress={trackExercise}
           disabled={loading}>
           <Text style={styles.trackButtonText}>

@@ -1,4 +1,4 @@
-import React, {useState, useRef, useCallback} from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   TextInput,
@@ -20,13 +20,13 @@ import {
   handleApiError,
 } from '../config/openai';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useTheme} from '../context/ThemeContext';
-import {useNavigation} from '@react-navigation/native';
-import {typography} from '../styles/typeograpghy';
+import { useTheme } from '../context/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
+import { typography } from '../styles/typeograpghy';
 
 const SendIcon = MaterialCommunityIcons as any;
 const CloseIcon = MaterialCommunityIcons as any;
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 type Message = {
   id: string;
@@ -35,7 +35,7 @@ type Message = {
 };
 
 const TypingIndicator = () => {
-  const {theme} = useTheme();
+  const { theme } = useTheme();
   const [dot1] = useState(new Animated.Value(0));
   const [dot2] = useState(new Animated.Value(0));
   const [dot3] = useState(new Animated.Value(0));
@@ -105,31 +105,54 @@ const TypingIndicator = () => {
   );
 };
 
-const ChatMessage = ({content, isUser}: {content: string; isUser: boolean}) => {
-  const {theme} = useTheme();
+const ChatMessage = ({ content, isUser }: { content: string; isUser: boolean }) => {
+  const { theme } = useTheme();
+
+  // Clean and format the message content
+  const formatMessage = (text: string) => {
+    return text
+      // Remove multiple spaces
+      .replace(/\s+/g, ' ')
+      // Remove standalone asterisks or underscores
+      .replace(/(?<!\*)\*(?!\*)/g, '')
+      .replace(/(?<!_)_(?!_)/g, '')
+      // Remove standalone dots that might appear as ellipsis
+      .replace(/\s\.\s/g, ' ')
+      // Clean up multiple newlines
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      // Remove any leading/trailing whitespace
+      .trim()
+      // Handle markdown-style bold/italic (if you want to keep the emphasis, otherwise remove these lines)
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/__(.*?)__/g, '$1')
+      .replace(/_(.*?)_/g, '$1');
+  };
 
   return (
-    <View
-      style={[
-        styles.messageContainer,
-        {
-          backgroundColor: isUser ? theme.colors.primary : theme.colors.card,
-          alignSelf: isUser ? 'flex-end' : 'flex-start',
-        },
-      ]}>
-      <Text
+    <TouchableOpacity activeOpacity={1}>
+      <View
         style={[
-          styles.messageText,
-          {color: isUser ? 'white' : theme.colors.text},
+          styles.messageContainer,
+          {
+            backgroundColor: isUser ? theme.colors.primary : theme.colors.card,
+            alignSelf: isUser ? 'flex-end' : 'flex-start',
+          },
         ]}>
-        {content}
-      </Text>
-    </View>
+        <Text
+          style={[
+            styles.messageText,
+            { color: isUser ? 'white' : theme.colors.text },
+          ]}>
+          {formatMessage(content)}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 };
 
-export const ChatBotScreen = ({toggleModal}) => {
-  const {theme} = useTheme();
+export const ChatBotScreen = ({ toggleModal }) => {
+  const { theme } = useTheme();
   const navigation = useNavigation();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -158,16 +181,22 @@ export const ChatBotScreen = ({toggleModal}) => {
 
     try {
       const genAI = getGeminiInstance();
-
-      const model = genAI.getGenerativeModel({model: 'gemini-1.5-flash'});
-
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent(userMessage.content);
       const response = await result.response;
-      const text = response.text();
+      let text = response.text();
+
+      // Clean up common AI response artifacts
+      text = text
+        .replace(/^\s*[*\-•]\s*/gm, '') // Remove leading bullets/asterisks
+        .replace(/^Title:\s*/i, '') // Remove "Title:" prefix
+        .replace(/^Answer:\s*/i, '') // Remove "Answer:" prefix
+        .replace(/^Response:\s*/i, '') // Remove "Response:" prefix
+        .trim();
 
       const aiResponse = {
         id: (Date.now() + 1).toString(),
-        content: text.trim() || "I couldn't process that request.",
+        content: text || "I couldn't process that request.",
         isUser: false,
       };
 
@@ -188,7 +217,7 @@ export const ChatBotScreen = ({toggleModal}) => {
 
   return (
     <SafeAreaView
-      style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View
         style={[
@@ -207,24 +236,29 @@ export const ChatBotScreen = ({toggleModal}) => {
       </View>
 
       {/* Chat Content */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}>
-        <View style={styles.chatContainer}>
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={item => item.id}
-            renderItem={({item}) => (
-              <ChatMessage content={item.content} isUser={item.isUser} />
-            )}
-            ListFooterComponent={() => (isLoading ? <TypingIndicator /> : null)}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
-            contentContainerStyle={styles.flatListContent}
-            showsVerticalScrollIndicator={true}
-            bounces={true}
-          />
+      <View style={styles.chatContainer}>
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item, index) => item.id + index}
+          renderItem={({ item }) => (
+            <ChatMessage content={item.content} isUser={item.isUser} />
+          )}
+          ListFooterComponent={() => (isLoading ? <TypingIndicator /> : null)}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+          contentContainerStyle={styles.flatListContent}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+          scrollEventThrottle={16}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          removeClippedSubviews={true}
+          style={styles.flatListStyle}
+        />
 
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View
             style={[
               styles.inputContainer,
@@ -252,7 +286,7 @@ export const ChatBotScreen = ({toggleModal}) => {
               onPress={sendMessage}
               style={[
                 styles.sendButton,
-                {backgroundColor: theme.colors.primary},
+                { backgroundColor: theme.colors.primary },
               ]}
               disabled={isLoading}>
               {isLoading ? (
@@ -267,8 +301,8 @@ export const ChatBotScreen = ({toggleModal}) => {
               )}
             </TouchableOpacity>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -295,11 +329,13 @@ const styles = StyleSheet.create({
     right: 16,
     padding: 4,
   },
-  keyboardView: {
-    flex: 1,
-  },
   chatContainer: {
     flex: 1,
+    marginTop: -20,
+  },
+  flatListStyle: {
+    flex: 1,
+    width: '100%',
   },
   flatListContent: {
     paddingHorizontal: 16,
@@ -313,14 +349,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 1,
   },
   messageText: {
-    // fontSize: 15,
-    // lineHeight: 20,
     ...typography.bodyMedium,
+    lineHeight: 20,
+    letterSpacing: 0.15,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -335,7 +371,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    // fontSize: 15,
     ...typography.label,
     opacity: 0.7,
   },
